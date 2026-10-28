@@ -153,4 +153,29 @@ objective.
 
 ---
 
+## 8. Context-aware risk (risk engine v2)
+
+v1 scored a finding from its algorithm alone for code scans, so every RSA hit was "HIGH". v2
+(`shared-scanner/engines/risk_v2.py`, vendored into the CLI) ranks each finding 0–100 from
+*where the crypto lives and what it protects*, with a written reason for every factor:
+
+`score = algorithm × crypto role × exposure × data (sensitivity × shelf life) × [HNDL] × code reality × blast radius × controls`
+
+- **Crypto role** — key exchange / encryption can be harvested now and decrypted later;
+  signatures only break once a quantum computer exists.
+- **Exposure** — internet-facing vs at-rest vs internal vs offline.
+- **Code reality** — test, example and vendored code is discounted.
+- **Blast radius / controls** — shared components rise; mTLS, VPN, segmentation lower.
+- Context is inferred from paths (and labelled *inferred*) or supplied per glob in a context file.
+
+```bash
+seqr scan code ecdat-demo/sample-repo --ranked
+seqr scan code ecdat-demo/sample-repo --context examples/acme-risk-context.json
+seqr scan code ecdat-demo/sample-repo --context examples/acme-risk-context.json --output json
+```
+On the ACME sample: v1 = 18 × HIGH; v2 = 16 de-duplicated findings across IMMEDIATE / URGENT /
+PLANNED / MONITOR, with the public payments key exchange on long-lived card data ranked first.
+
+---
+
 *Built on SeQr. Quantum layer by QpiAI Opt + QCloud. Made for QUANT-A-MAZE 3.0.*

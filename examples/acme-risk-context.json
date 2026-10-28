@@ -1,0 +1,5 @@
+{"rules": [
+  {"match": "payments/*", "exposure": "internet", "data_sensitivity": "highly_confidential", "shelf_life": "long", "note": "card + settlement path, public API"},
+  {"match": "gateway/*", "dependents": 6, "note": "fronts every service"},
+  {"match": "infra/*", "controls": ["vpn", "segmentation"]}
+]}

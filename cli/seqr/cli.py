@@ -112,8 +112,13 @@ def scan():
 @_output_opt()
 @_save_opt()
 @click.option("--quiet", is_flag=True, default=False, help="Only print findings")
+@click.option("--ranked", is_flag=True, default=False,
+              help="Rank findings by context-aware risk (exposure, crypto role, data, blast radius)")
+@click.option("--context", "context_file", default=None, type=click.Path(exists=True, dir_okay=False),
+              help="JSON/YAML file of per-path context overrides for --ranked (implies --ranked)")
 @click.pass_context
-def scan_code(ctx, path, language, exclude, include, severity, fail_on, policy, output, save, quiet):
+def scan_code(ctx, path, language, exclude, include, severity, fail_on, policy, output, save, quiet,
+              ranked, context_file):
     """Scan a local code directory for quantum-vulnerable cryptography."""
     no_colour = ctx.obj.get("no_colour", False)
     quiet = quiet or ctx.obj.get("quiet", False)
@@ -151,7 +156,10 @@ def scan_code(ctx, path, language, exclude, include, severity, fail_on, policy, 
     ]
 
     # Output
-    rendered = _render_code(display_findings, files_scanned, path, output, no_colour, quiet)
+    if ranked or context_file:
+        rendered = _render_ranked(display_findings, files_scanned, path, output, no_colour, context_file)
+    else:
+        rendered = _render_code(display_findings, files_scanned, path, output, no_colour, quiet)
 
     if save:
         Path(save).write_text(rendered, encoding="utf-8")
@@ -193,6 +201,53 @@ def _render_code(findings, files_scanned, target, output, no_colour, quiet):
     buf = io.StringIO()
     console = make_console(no_colour)
     print_code_results(console, findings, files_scanned, target, quiet=quiet)
+    return ""
+
+
+_TIER_STYLE = {"IMMEDIATE": "bold red", "URGENT": "bold yellow", "PLANNED": "cyan", "MONITOR": "dim"}
+
+
+def _render_ranked(findings, files_scanned, target, output, no_colour, context_file):
+    """Context-aware ranking (risk v2): every finding scored 0-100 with the reasons behind it."""
+    from seqr._scanner.engines.risk_v2 import RiskContext, assess_findings, summarize
+
+    try:
+        context = RiskContext.load(context_file)
+    except ValueError as e:
+        raise click.BadParameter(str(e), param_hint="--context")
+    results = assess_findings(findings, target, context)
+    summary = summarize(results)
+
+    if output == "json":
+        return json.dumps({"target": target, "files_scanned": files_scanned,
+                           "summary": summary, "findings": [a.to_dict() for a in results]}, indent=2)
+
+    from rich.table import Table
+    from seqr.output.terminal import make_console
+    console = make_console(no_colour)
+    table = Table(title=f"Risk-ranked findings — {target}", show_lines=False, expand=True)
+    table.add_column("#", justify="right", style="dim", no_wrap=True)
+    table.add_column("Score", justify="right", no_wrap=True)
+    table.add_column("Tier", no_wrap=True)
+    table.add_column("Where")
+    table.add_column("Role / exposure")
+    table.add_column("Why")
+    for i, a in enumerate(results, 1):
+        style = _TIER_STYLE.get(a.tier, "")
+        where = f"{a.rel_path}:{a.line_number}\n[dim]{a.algorithm}[/dim]"
+        guess = " [dim](inferred)[/dim]" if "exposure" in a.inferred else ""
+        role = f"{a.role.replace('_', ' ')}\n{a.exposure}{guess}" + ("\n[red]HNDL[/red]" if a.hndl else "")
+        table.add_row(str(i), f"[{style}]{a.score:.0f}[/{style}]", f"[{style}]{a.tier}[/{style}]",
+                      where, role, "; ".join(a.reasons(2)))
+    console.print(table)
+    t = summary["tiers"]
+    console.print(f"  {summary['findings']} findings · IMMEDIATE {t['IMMEDIATE']} · URGENT {t['URGENT']} · "
+                  f"PLANNED {t['PLANNED']} · MONITOR {t['MONITOR']}")
+    if summary["inferred_exposure"]:
+        console.print(f"  [dim]{summary['inferred_exposure']} findings have exposure inferred from file paths; "
+                      "pass --context <file> to supply exposure, data and controls.[/dim]")
+    if summary["hndl"]:
+        console.print(f"  [dim]{summary['hndl_disclaimer']}[/dim]")
     return ""
 
 
