@@ -95,3 +95,6 @@ research/paper/*.log
 qcloud.env
 .venv/
 seqr-quant-venv/
+
+# local dev database (scripts/run-local-backend.cmd)
+.local/

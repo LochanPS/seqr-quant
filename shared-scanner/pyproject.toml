@@ -10,8 +10,8 @@ license = {text = "Proprietary"}
 authors = [{name = "Lochan", email = "lochan@seqr.in"}]
 requires-python = ">=3.10"
 dependencies = [
-    "sslyze==6.0.0",
-    "cryptography>=42.0.0,<43",  # sslyze 6.0.0 requires cryptography<43
+    "sslyze==6.3.1",
+    "cryptography>=43,<47",  # sslyze 6.3.1 requires cryptography>=43,<47
 ]
 
 [project.optional-dependencies]
