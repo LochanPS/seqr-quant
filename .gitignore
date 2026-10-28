@@ -98,3 +98,4 @@ seqr-quant-venv/
 
 # local dev database (scripts/run-local-backend.cmd)
 .local/
+.venv-seqr/
