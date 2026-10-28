@@ -1,0 +1,14 @@
+# Caddy — automatic HTTPS (Let's Encrypt) + reverse proxy to the backend.
+# Replace api.seqrlabs.com if you use a different API hostname.
+# Requires: DNS A record api.seqrlabs.com -> VM public IP, and ports 80+443 open
+# (Oracle security list + VM firewall). Caddy fetches + renews the cert itself.
+
+api.seqrlabs.com {
+	encode zstd gzip
+	reverse_proxy backend:8000
+}
+
+# Uncomment to serve a plain-HTTP health probe before DNS/TLS is ready (testing only):
+# :80 {
+# 	reverse_proxy backend:8000
+# }

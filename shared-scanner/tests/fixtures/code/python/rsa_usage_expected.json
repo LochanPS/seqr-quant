@@ -1,0 +1,10 @@
+{
+  "file": "rsa_usage.py",
+  "notes": "RSA and ECDSA both imported and used. Both are quantum-vulnerable. RSA risk=8, ECDSA risk=7.",
+  "min_findings": 1,
+  "algorithms_expected": ["RSA", "ECC"],
+  "algorithm_families_expected": ["RSA", "ECC"],
+  "max_confidence": "high",
+  "quantum_statuses_expected": ["vulnerable"],
+  "min_algorithm_risk": 7
+}

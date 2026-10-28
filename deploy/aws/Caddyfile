@@ -1,0 +1,23 @@
+# Caddy — automatic HTTPS (Let's Encrypt) for the whole SeQr product on one box.
+#   www.seqrlabs.com  -> frontend:3000  (Next.js)
+#   api.seqrlabs.com  -> backend:8000   (FastAPI + WebSocket scan progress)
+#   seqrlabs.com      -> redirect to www
+#
+# Requires: A records for api, www (and apex) -> the EC2 Elastic IP, and the AWS
+# security group allowing inbound 80 + 443. Caddy fetches + renews both certs itself.
+# reverse_proxy upgrades WebSocket connections automatically (no extra config).
+
+api.seqrlabs.com {
+	encode zstd gzip
+	reverse_proxy backend:8000
+}
+
+www.seqrlabs.com {
+	encode zstd gzip
+	reverse_proxy frontend:3000
+}
+
+# Apex -> www (Let's Encrypt cert issued for the bare domain too).
+seqrlabs.com {
+	redir https://www.seqrlabs.com{uri} permanent
+}

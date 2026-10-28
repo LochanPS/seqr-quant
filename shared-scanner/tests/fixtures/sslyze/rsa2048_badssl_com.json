@@ -1,0 +1,19 @@
+{
+  "domain": "rsa2048.badssl.com",
+  "captured": "2026-06-13",
+  "notes": "RSA-2048 cert, RSA key exchange (no ephemeral), TLS 1.2 max. hndl_risk=True because static RSA key exchange is HNDL candidate.",
+  "expected": {
+    "reachable": true,
+    "cert_algorithm": "RSA",
+    "cert_key_size": 2048,
+    "cert_expired": false,
+    "key_exchange_algorithm": "RSA",
+    "tls_version": "TLS_1_2",
+    "hybrid_status": "none",
+    "pqc_hybrid_offered": false,
+    "hndl_risk": true,
+    "final_algorithm_risk": 8,
+    "quantum_status": "vulnerable",
+    "tls_1_0_in_supported": true
+  }
+}

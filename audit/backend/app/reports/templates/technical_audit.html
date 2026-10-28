@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Cover -->
+<div class="cover">
+  <div class="eyebrow">SeQr Labs &nbsp;·&nbsp; POST-QUANTUM ASSESSMENT &nbsp;·&nbsp; CONFIDENTIAL</div>
+  <h1>Post-Quantum Cryptography</h1>
+  <h2>Technical Audit Report</h2>
+  <div class="org">{{ org_name }}</div>
+  <div class="rule"></div>
+  <div class="meta">
+    <div>Components: {{ total_components }}</div>
+    <div>Assets: {{ total_assets }}</div>
+    <div>Generated: {{ generated_at }}</div>
+    <div>Scanner: SeQr 0.1.0</div>
+  </div>
+</div>
+
+<!-- Full CBOM Table -->
+<div class="page">
+  <h2>Cryptographic Bill of Materials (CBOM)</h2>
+  <p style="font-size:10pt;margin-bottom:12px">
+    Complete inventory of {{ total_components }} cryptographic components across
+    {{ total_assets }} scanned asset(s). Sorted by migration priority.
+  </p>
+  <table>
+    <tr>
+      <th>Location</th><th>Algorithm</th><th>Status</th>
+      <th>HNDL</th><th>Timeline</th><th>Priority</th>
+    </tr>
+    {% for c in components %}
+    <tr>
+      <td style="font-size:9pt">{{ c.location_detail[:50] }}</td>
+      <td>{{ c.algorithm }}</td>
+      <td>
+        <span class="badge badge-{{
+          'vuln' if c.quantum_status in ['vulnerable', 'deprecated']
+          else 'safe' if c.quantum_status == 'safe'
+          else 'planned' }}">{{ c.quantum_status }}</span>
+      </td>
+      <td>{{ c.estimated_hndl_exposure or 'N/A' }}</td>
+      <td>{{ c.threat_timeline or 'N/A' }}</td>
+      <td>{{ c.pqc_migration_priority if c.pqc_migration_priority is not none else 'N/A' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h2>Migration Roadmap</h2>
+  {% for timeline, data in roadmap.items() %}
+  {% if data.components %}
+  <h3>{{ timeline }}{% if data.label and data.label != timeline %} — {{ data.label }}{% endif %}</h3>
+  <table>
+    <tr><th style="width:30%">Component</th><th>Action</th><th style="width:14%">Effort</th></tr>
+    {% for item in data.components %}
+    <tr>
+      <td>{{ item.location }}</td>
+      <td>{{ item.action }}</td>
+      <td>{{ item.effort_hours }} h</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  {% endfor %}
+
+  <h2>Methodology &amp; Provenance</h2>
+  <p class="muted"><b>Tool:</b> SeQr scanner — sslyze 6.0 for passive TLS analysis and an
+    OpenSSL 3.5+ ML-KEM ClientHello for <b>active</b> post-quantum detection.</p>
+  <p class="muted"><b>Method:</b> passive measurement plus an active key-exchange probe.
+    No authentication, no exploitation, no data exfiltration — rate-limited.</p>
+  <p class="muted"><b>Coverage:</b> TLS (443), SSH (22), mail STARTTLS (SMTP / IMAP / POP3),
+    database TLS (PostgreSQL). <b>Not assessed:</b> origins behind CDNs, application-layer
+    data, internal services.</p>
+  <p class="muted"><b>Scan confidence:</b> high = direct; medium = cloud IP; low =
+    CDN-terminated. <b>Assessment date:</b> {{ generated_at }}.</p>
+
+  <div style="margin-top:20px;font-size:8pt;color:#64748B;border-top:1px solid #E2E8F0;padding-top:8px">
+    <b>HNDL Disclaimer:</b> HNDL exposure scores are predictive cryptographic risk metrics
+    based on data-type endurance, not indicators of active data interception or confirmed
+    network breaches.
+  </div>
+  <div class="confidential">
+    CONFIDENTIAL — SeQr Labs Technical Audit — {{ org_name }} — {{ generated_at }}
+  </div>
+</div>
+{% endblock %}

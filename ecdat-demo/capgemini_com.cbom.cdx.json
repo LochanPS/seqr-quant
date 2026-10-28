@@ -1,0 +1,195 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:5dd7cdf2-f1a0-4f9d-94e4-ba39e6b44112",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-09-14T11:38:16.438994+00:00",
+    "tools": [
+      {
+        "vendor": "SeQr Labs",
+        "name": "seqr-scanner",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "6f432d95-a722-4bd1-b067-c64781be4b16",
+      "name": "TLS_1_3",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "algorithmProperties": {
+          "primitive": "protocol",
+          "parameterSetIdentifier": "TLS_1_3",
+          "classical": false
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "tls_cert",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "capgemini.com:443",
+            "line": null
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "safe"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "0"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "0.0"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "False"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "low"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "roadmap"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "Consult NIST PQC standards"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 203/204/205"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "e41b93c6-7670-49ce-ab4b-de89ba9f627a",
+      "name": "ECDSA-P256-256",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "parameterSetIdentifier": "ECDSA-P256-256",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "tls_cert",
+          "size": 256
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "capgemini.com:443 (cert)",
+            "line": null
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "7"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "5.6"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "critical"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "Consult NIST PQC standards"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 203/204/205"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "f176d39c-4ab0-48ea-9244-257e8a1f5b39",
+      "name": "X25519",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "algorithmProperties": {
+          "primitive": "key-agreement",
+          "parameterSetIdentifier": "X25519",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "tls_cert",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "capgemini.com:443 (key exchange)",
+            "line": null
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "5"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "4.0"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "critical"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-KEM-768"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 203"
+        }
+      ]
+    }
+  ]
+}

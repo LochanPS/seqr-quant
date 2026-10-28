@@ -1,0 +1,61 @@
+{
+  "name": "@seqr/pqc",
+  "version": "0.2.0",
+  "description": "Post-quantum cryptography for JavaScript/TypeScript developers. Drop-in NIST PQC (ML-KEM / ML-DSA) that replaces RSA, ECDH, and ECDSA. The npm port of pqcmap.",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./jwt": {
+      "import": "./src/jwt.js"
+    },
+    "./tls": {
+      "import": "./src/tls.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "src/",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "post-quantum",
+    "cryptography",
+    "PQC",
+    "ML-KEM",
+    "ML-DSA",
+    "NIST",
+    "quantum-safe",
+    "kyber",
+    "dilithium",
+    "seqr"
+  ],
+  "author": "SeQr Labs",
+  "license": "MIT",
+  "homepage": "https://seqrlabs.com/sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LochanPS/SeQr-Labs.git",
+    "directory": "pqcmap-js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@noble/curves": "^1.0.0",
+    "@noble/hashes": "^1.0.0",
+    "@noble/post-quantum": "^0.7.0"
+  }
+}

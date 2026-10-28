@@ -1,0 +1,56 @@
+# SeQr — AWS hackathon demo stack (single EC2 box, HTTP only, no Caddy/TLS).
+# Backend published on :8000 directly so a local http://localhost:3000 frontend
+# can hit http://<ec2-ip>:8000 with no mixed-content block.
+#
+# Run from repo root on the EC2 box:
+#   docker compose --env-file deploy/oracle/.env -f deploy/aws/docker-compose.demo.yml up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: seqr
+      POSTGRES_USER: seqr
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/oracle/.env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seqr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ../..                               # repo root → shared-scanner/ in context
+      dockerfile: audit/backend/Dockerfile.render
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file: ../oracle/.env
+    environment:
+      PORT: "8000"
+      DATABASE_URL: postgresql+asyncpg://seqr:${DB_PASSWORD}@db:5432/seqr
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: development                     # skip prod CORS guard; HTTP demo w/ localhost frontend
+      DEPLOYMENT_MODE: saas
+      USE_FAKE_REDIS: "false"
+      CELERY_ALWAYS_EAGER: "true"
+    ports:
+      - "8000:8000"                                # published directly, no Caddy
+    volumes:
+      - reports:/app/backend/reports
+
+volumes:
+  db_data:
+  redis_data:
+  reports:

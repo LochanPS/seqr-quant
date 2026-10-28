@@ -1,0 +1,17 @@
+{
+  "domain": "tls-v1-0.badssl.com",
+  "captured": "2026-06-13",
+  "notes": "Server supports TLS 1.0 (legacy). Scanner reports best TLS version (TLS 1.2 if also supported), but TLS_1_0 appears in supported_tls_versions. RSA-2048 cert.",
+  "expected": {
+    "reachable": true,
+    "cert_algorithm": "RSA",
+    "cert_key_size": 2048,
+    "cert_expired": false,
+    "key_exchange_algorithm": "RSA",
+    "hybrid_status": "none",
+    "pqc_hybrid_offered": false,
+    "hndl_risk": true,
+    "quantum_status": "vulnerable",
+    "tls_1_0_in_supported": true
+  }
+}

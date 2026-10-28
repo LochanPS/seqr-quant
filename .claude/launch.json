@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "seqr-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "audit/frontend", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

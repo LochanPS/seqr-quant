@@ -1,0 +1,157 @@
+domain,entity,entity_type
+razorpay.com,Razorpay,payment_gateway
+api.razorpay.com,Razorpay,payment_gateway
+checkout.razorpay.com,Razorpay,payment_gateway
+dashboard.razorpay.com,Razorpay,payment_gateway
+tokenisation.razorpay.com,Razorpay,payment_gateway
+payu.in,PayU,payment_gateway
+api.payu.in,PayU,payment_gateway
+secure.payu.in,PayU,payment_gateway
+phonepe.com,PhonePe,upi_app
+api.phonepe.com,PhonePe,upi_app
+zerodha.com,Zerodha,broker
+api.zerodha.com,Zerodha,broker
+kite.zerodha.com,Zerodha,broker
+coin.zerodha.com,Zerodha,broker
+groww.in,Groww,broker
+api.groww.in,Groww,broker
+billdesk.com,BillDesk,payment_gateway
+api.billdesk.com,BillDesk,payment_gateway
+ccavenue.com,CCAvenue,payment_gateway
+api.ccavenue.com,CCAvenue,payment_gateway
+cashfree.com,Cashfree,payment_gateway
+api.cashfree.com,Cashfree,payment_gateway
+payments.cashfree.com,Cashfree,payment_gateway
+paytm.com,Paytm,upi_app
+api.paytm.com,Paytm,upi_app
+securegw.paytm.in,Paytm,payment_gateway
+bharatpe.com,BharatPe,payment_gateway
+api.bharatpe.com,BharatPe,payment_gateway
+mobikwik.com,MobiKwik,wallet
+walletapi.mobikwik.com,MobiKwik,wallet
+freecharge.in,Freecharge,wallet
+api.freecharge.in,Freecharge,wallet
+instamojo.com,Instamojo,payment_gateway
+api.instamojo.com,Instamojo,payment_gateway
+slice.is,Slice,fintech
+api.slice.is,Slice,fintech
+jupiter.money,Jupiter,neobank
+api.jupiter.money,Jupiter,neobank
+fi.money,Fi,neobank
+api.fi.money,Fi,neobank
+niyo.co,Niyo,neobank
+api.niyo.co,Niyo,neobank
+open.money,Open,neobank
+cred.club,CRED,fintech
+api.cred.club,CRED,fintech
+upstox.com,Upstox,broker
+api.upstox.com,Upstox,broker
+angelone.in,AngelOne,broker
+api.angelone.in,AngelOne,broker
+icicidirect.com,ICICI Direct,broker
+api.icicidirect.com,ICICI Direct,broker
+hdfcsec.com,HDFC Securities,broker
+api.hdfcsec.com,HDFC Securities,broker
+indmoney.com,INDmoney,fintech
+smallcase.com,Smallcase,fintech
+api.smallcase.com,Smallcase,fintech
+mswipe.com,Mswipe,payment_gateway
+pinelabs.com,Pine Labs,payment_gateway
+api.pinelabs.com,Pine Labs,payment_gateway
+juspay.in,Juspay,payment_gateway
+api.juspay.in,Juspay,payment_gateway
+slice.com,Slice,fintech
+navi.com,Navi,nbfc
+getsimpl.com,Simpl,bnpl
+getonecard.app,OneCard,fintech
+khatabook.com,Khatabook,fintech
+kreditbee.in,KreditBee,nbfc
+lazypay.in,LazyPay,bnpl
+moneyview.in,MoneyView,nbfc
+setu.co,Setu,fintech_infra
+decentro.tech,Decentro,fintech_infra
+easebuzz.in,Easebuzz,payment_gateway
+atomtech.in,Atom,payment_gateway
+hdfcbank.com,HDFC Bank,bank
+icicibank.com,ICICI Bank,bank
+axisbank.com,Axis Bank,bank
+kotak.com,Kotak,bank
+yesbank.in,Yes Bank,bank
+idfcfirstbank.com,IDFC First,bank
+federalbank.co.in,Federal Bank,bank
+indusind.com,IndusInd,bank
+bankofbaroda.in,Bank of Baroda,bank
+canarabank.com,Canara Bank,bank
+policybazaar.com,PolicyBazaar,insurance
+acko.com,Acko,insurance
+godigit.com,Digit,insurance
+insurancedekho.com,InsuranceDekho,insurance
+kuvera.in,Kuvera,wealth_mgmt
+etmoney.com,ETMoney,wealth_mgmt
+scripbox.com,Scripbox,wealth_mgmt
+5paisa.com,5paisa,brokerage
+motilaloswal.com,Motilal Oswal,brokerage
+dhan.co,Dhan,brokerage
+worldline.com,Worldline India,payment_gateway
+api.kotak.com,Kotak Securities,brokerage
+api.5paisa.com,5paisa,brokerage
+api.dhan.co,Dhan,brokerage
+api.motilaloswal.com,Motilal Oswal,brokerage
+api.indmoney.com,INDmoney,wealth_mgmt
+api.kuvera.in,Kuvera,wealth_mgmt
+api.scripbox.com,Scripbox,wealth_mgmt
+api.etmoney.com,ETMoney,wealth_mgmt
+api.easebuzz.in,Easebuzz,payment_gateway
+api.mswipe.com,Mswipe,pos
+api.worldline.com,Worldline India,payment_gateway
+api.mobikwik.com,MobiKwik,fintech
+bajajfinserv.in,Bajaj Finance,nbfc
+api.bajajfinserv.in,Bajaj Finance,nbfc
+muthootfinance.com,Muthoot Finance,nbfc
+api.muthootfinance.com,Muthoot Finance,nbfc
+dmifinance.in,DMI Finance,nbfc
+api.dmifinance.in,DMI Finance,nbfc
+api.navi.com,Navi,nbfc
+api.kreditbee.in,KreditBee,nbfc
+api.moneyview.in,MoneyView,nbfc
+api.lazypay.in,LazyPay,bnpl
+sliceit.com,Slice,fintech
+api.sliceit.com,Slice,fintech
+api.open.money,Open,neobank
+api.policybazaar.com,PolicyBazaar,insurance
+api.acko.com,Acko,insurance
+api.godigit.com,Digit Insurance,insurance
+api.hdfcbank.com,HDFC Bank,bank
+api.icicibank.com,ICICI Bank,bank
+api.axisbank.com,Axis Bank,bank
+api.yesbank.in,Yes Bank,bank
+api.idfcfirstbank.com,IDFC First Bank,bank
+api.setu.co,Setu,fintech_infra
+sbi.co.in,sbi,bank
+rblbank.com,rblbank,bank
+aubank.in,aubank,bank
+bandhanbank.com,bandhanbank,bank
+pnbindia.in,pnbindia,bank
+coverfox.com,coverfox,insurance
+starhealth.in,starhealth,insurance
+hdfcergo.com,hdfcergo,insurance
+icicilombard.com,icicilombard,insurance
+bajajallianz.com,bajajallianz,insurance
+tataaig.com,tataaig,insurance
+maxlifeinsurance.com,maxlifeinsurance,insurance
+sbilife.co.in,sbilife,insurance
+hdfclife.com,hdfclife,insurance
+licindia.in,licindia,insurance
+iifl.com,iifl,brokerage
+sharekhan.com,sharekhan,brokerage
+edelweiss.in,edelweiss,brokerage
+geojit.com,geojit,brokerage
+paytmmoney.com,paytmmoney,brokerage
+fisdom.com,fisdom,brokerage
+lendingkart.com,lendingkart,nbfc
+indifi.com,indifi,nbfc
+flexiloans.com,flexiloans,nbfc
+incred.com,incred,nbfc
+capitalfloat.com,capitalfloat,nbfc
+cashe.co.in,cashe,nbfc
+moneytap.com,moneytap,nbfc

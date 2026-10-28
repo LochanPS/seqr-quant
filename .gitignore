@@ -1,0 +1,97 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+/lib/
+/lib64/
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# Distribution / packaging
+*.tar.gz
+*.whl
+
+# Secrets / credentials — NEVER commit these
+.env
+.env.*
+# ...but keep the non-secret env TEMPLATES (needed by a fresh deploy clone)
+!deploy/oracle/.env.oracle.example
+!deploy/local/.env.local.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.toml
+config.local.toml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (future frontend)
+node_modules/
+.next/
+.nuxt/
+dist/
+
+# Docker
+*.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Tree-sitter build artifacts
+build/
+
+# Local test outputs
+graphify-out/
+
+# build artifacts
+research/paper/*.aux
+research/paper/*.log
+
+# --- seqr-quant: secrets & env (NEVER commit) ---
+.env
+*.env
+!*.env.example
+qcloud.env
+.venv/
+seqr-quant-venv/

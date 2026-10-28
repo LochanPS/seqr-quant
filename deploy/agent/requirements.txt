@@ -1,0 +1,9 @@
+# SeQr discovery agent runtime deps. Deliberately minimal so the single binary/image stays slim.
+cryptography>=42.0,<44
+PyYAML>=6.0            # YAML config support (JSON works without it)
+# Optional, only for the HSM/PKCS#11 collector; uncomment on hosts with an HSM:
+# PyKCS11>=1.5.12
+# Optional collectors — install only where the corresponding source exists:
+# seqr-scanner            # `ssh` collector (reuses the shared KEXINIT scanner)
+# kubernetes>=29.0        # `k8s` collector (TLS secrets / cert-manager / ingress)
+# boto3>=1.34             # `cloud` collector, AWS ACM

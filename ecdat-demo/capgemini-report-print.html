@@ -1,0 +1,261 @@
+<title>Capgemini Quantum Exposure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0B0E14; --panel:#131924; --panel-2:#0F141D; --line:rgba(224,178,76,.16);
+    --line-soft:rgba(255,255,255,.07);
+    --ink:#E7EAF0; --muted:#98A2B3; --faint:#6B7480;
+    --gold:#E0B24C; --gold-soft:rgba(224,178,76,.12);
+    --red:#E5484D; --amber:#F5A524; --green:#3FB984;
+    --red-soft:rgba(229,72,77,.13); --amber-soft:rgba(245,165,36,.13); --green-soft:rgba(63,185,132,.13);
+    --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    --disp:"Archivo",var(--sans); --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    line-height:1.55;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1200px 500px at 78% -8%,rgba(224,178,76,.06),transparent 60%);}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 28px 64px}
+
+  /* masthead */
+  .mast{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{flex:0 0 auto}
+  .brand .name{font-family:var(--disp);font-weight:800;font-size:19px;letter-spacing:.2px}
+  .brand .name span{color:var(--gold)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+
+  /* title */
+  .head{margin:34px 0 26px}
+  .head h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,5vw,44px);
+    line-height:1.04;letter-spacing:-.02em;margin:0;text-wrap:balance}
+  .head .sub{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;color:var(--muted);font-size:14px}
+  .head .sub .dom{font-family:var(--mono);color:var(--ink);font-size:15px}
+  .verdict{display:inline-flex;align-items:center;gap:9px;margin-top:20px;
+    padding:9px 16px;border-radius:999px;background:var(--amber-soft);
+    border:1px solid rgba(245,165,36,.4);color:var(--amber);
+    font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  .verdict .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+
+  /* summary tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:28px 0 8px}
+  .tile{background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:16px 16px 15px}
+  .tile .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .tile .v{font-family:var(--disp);font-weight:700;font-size:26px;margin-top:9px;line-height:1}
+  .tile .v.small{font-size:19px;letter-spacing:.01em}
+  .tile .n{color:var(--muted);font-size:12px;margin-top:7px}
+  .v.warn{color:var(--amber)} .v.bad{color:var(--red)} .v.ok{color:var(--green)}
+
+  section{margin-top:38px}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--gold);margin:0 0 14px;display:flex;align-items:center;gap:12px}
+  .lbl::after{content:"";height:1px;flex:1;background:var(--line)}
+
+  /* asset table */
+  .assets{border:1px solid var(--line-soft);border-radius:14px;overflow:hidden;background:var(--panel-2)}
+  .row{display:grid;grid-template-columns:14px 1.5fr 1fr .9fr 1.2fr;gap:14px;align-items:center;
+    padding:15px 18px 15px 6px;border-top:1px solid var(--line-soft)}
+  .row.h{border-top:0;padding-top:13px;padding-bottom:13px;background:rgba(255,255,255,.02)}
+  .row.h span{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+  .stripe{width:4px;height:38px;border-radius:3px;margin-left:8px}
+  .s-bad{background:var(--red)} .s-ok{background:var(--green)}
+  .an{font-family:var(--mono);font-weight:600;font-size:15px}
+  .an .role{display:block;font-family:var(--sans);font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+  .qs{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500}
+  .qs .d{width:7px;height:7px;border-radius:50%}
+  .qs.bad{color:#F2999C} .qs.bad .d{background:var(--red)}
+  .qs.ok{color:#8FE0BF} .qs.ok .d{background:var(--green)}
+  .pri{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    padding:4px 9px;border-radius:6px;display:inline-block}
+  .pri.crit{background:var(--red-soft);color:#F2999C}
+  .pri.low{background:var(--green-soft);color:#8FE0BF}
+  .fix{font-family:var(--mono);font-size:13px;color:var(--gold)}
+  .fix.none{color:var(--faint)}
+
+  /* evidence */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .kv{background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px}
+  .kv dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:10px 18px}
+  .kv dt{color:var(--muted);font-size:13px}
+  .kv dd{margin:0;font-family:var(--mono);font-size:13px;text-align:right;color:var(--ink)}
+  .kv dd.g{color:var(--green)} .kv dd.r{color:#F2999C}
+
+  .prose{color:var(--muted);font-size:14.5px;max-width:66ch}
+  .prose b{color:var(--ink);font-weight:600}
+  .rec{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+  .rec .item{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;
+    background:var(--panel);border:1px solid var(--line-soft);border-left:3px solid var(--gold);
+    border-radius:10px;padding:14px 18px}
+  .rec .num{font-family:var(--disp);font-weight:800;color:var(--gold);font-size:16px;line-height:1.4}
+  .rec .t{font-weight:600;font-size:14.5px}
+  .rec .t .m{font-family:var(--mono);color:var(--gold);font-weight:600}
+  .rec .d{color:var(--muted);font-size:13.5px;margin-top:3px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{font-family:var(--mono);font-size:12px;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:7px 14px;background:var(--gold-soft)}
+
+  footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line)}
+  .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  .meta span b{color:var(--muted);font-weight:500}
+  .disc{margin-top:18px;font-size:11.5px;color:var(--faint);line-height:1.6;max-width:70ch}
+  .disc b{color:var(--muted);font-weight:600}
+
+  @media(max-width:680px){
+    .tiles{grid-template-columns:repeat(2,1fr)}
+    .grid2{grid-template-columns:1fr}
+    .row{grid-template-columns:10px 1.4fr 1fr;row-gap:8px}
+    .row .pri,.row .fix{grid-column:2/4}
+    .row.h span:nth-child(4),.row.h span:nth-child(5){display:none}
+    .meta{grid-template-columns:1fr}
+    .kv dd{text-align:left}
+  }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div class="brand">
+      <svg class="mark" width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="#E0B24C" stroke-width="2.4"/>
+        <circle cx="16" cy="16" r="4.4" fill="#E0B24C"/>
+        <line x1="24.5" y1="24.5" x2="30" y2="30" stroke="#E0B24C" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <span class="name">SeQr<span>Labs</span></span>
+    </div>
+    <span class="eyebrow">Cryptographic Assessment</span>
+  </header>
+
+  <div class="head">
+    <h1>Quantum Exposure Report</h1>
+    <div class="sub">
+      <span class="dom">capgemini.com</span>
+      <span>Public TLS endpoint · port 443</span>
+      <span>Scanned 14 Sep 2026</span>
+    </div>
+    <div class="verdict"><span class="dot"></span> Migration Required</div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">Quantum Risk</div><div class="v warn small">ELEVATED</div><div class="n">weighted across assets</div></div>
+    <div class="tile"><div class="k">Assets Analysed</div><div class="v">3</div><div class="n">1 protocol · 2 primitives</div></div>
+    <div class="tile"><div class="k">Quantum-Vulnerable</div><div class="v bad">2</div><div class="n">of 3 catalogued</div></div>
+    <div class="tile"><div class="k">Immediate Action</div><div class="v bad">2</div><div class="n">critical priority</div></div>
+  </div>
+
+  <section>
+    <p class="lbl">Cryptographic Bill of Materials</p>
+    <div class="assets">
+      <div class="row h">
+        <span></span><span>Asset · role</span><span>Quantum status</span><span>Priority</span><span>Recommended</span>
+      </div>
+      <div class="row">
+        <div class="stripe s-ok"></div>
+        <div class="an">TLS 1.3<span class="role">Transport protocol</span></div>
+        <div><span class="qs ok"><span class="d"></span>Safe</span></div>
+        <div><span class="pri low">Low</span></div>
+        <div class="fix none">Protocol current</div>
+      </div>
+      <div class="row">
+        <div class="stripe s-bad"></div>
+        <div class="an">ECDSA&#8288;-&#8288;P256<span class="role">Certificate signature</span></div>
+        <div><span class="qs bad"><span class="d"></span>Vulnerable</span></div>
+        <div><span class="pri crit">Critical</span></div>
+        <div class="fix">ML-DSA (FIPS&nbsp;204)</div>
+      </div>
+      <div class="row">
+        <div class="stripe s-bad"></div>
+        <div class="an">X25519<span class="role">Key exchange</span></div>
+        <div><span class="qs bad"><span class="d"></span>Vulnerable</span></div>
+        <div><span class="pri crit">Critical</span></div>
+        <div class="fix">ML-KEM-768 (FIPS&nbsp;203)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="lbl">Connection Evidence</p>
+    <div class="grid2">
+      <div class="kv"><dl>
+        <dt>TLS version</dt><dd class="g">TLS 1.3</dd>
+        <dt>Cipher suite</dt><dd>CHACHA20-POLY1305</dd>
+        <dt>Key exchange</dt><dd class="r">X25519</dd>
+        <dt>Forward secrecy</dt><dd class="g">Enabled</dd>
+      </dl></div>
+      <div class="kv"><dl>
+        <dt>Certificate</dt><dd class="r">ECDSA-P256</dd>
+        <dt>Issuer</dt><dd>Let&rsquo;s Encrypt</dd>
+        <dt>Expires</dt><dd>2026-10-16</dd>
+        <dt>Origin / IP</dt><dd>Direct · 192.0.66.152</dd>
+      </dl></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="lbl">Why It Matters</p>
+    <p class="prose">Both primitives protecting this endpoint &mdash; the certificate signature (<b>ECDSA-P256</b>)
+    and the session key exchange (<b>X25519</b>) &mdash; rest on elliptic-curve mathematics that a
+    cryptographically-relevant quantum computer can break. Traffic captured today can be stored and
+    decrypted later once that capability exists &mdash; the <b>harvest-now, decrypt-later</b> risk. The
+    transport protocol itself (TLS 1.3) is current; the exposure is in the algorithms it carries.</p>
+  </section>
+
+  <section>
+    <p class="lbl">Recommended Remediation</p>
+    <div class="rec">
+      <div class="item">
+        <div class="num">1</div>
+        <div>
+          <div class="t">Deploy a hybrid key exchange &mdash; <span class="m">X25519MLKEM768</span></div>
+          <div class="d">Closes the harvest-now exposure on the session key immediately, while staying
+          interoperable with classical clients. Supported on OpenSSL 3.5+ / modern TLS stacks.</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="num">2</div>
+        <div>
+          <div class="t">Plan the certificate move to <span class="m">ML-DSA-65</span></div>
+          <div class="d">Track CA and PKI support for FIPS&nbsp;204 signatures; stage a hybrid certificate
+          chain as issuers enable it.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="lbl">Regulatory Context — India</p>
+    <div class="chips">
+      <span class="chip">PCI DSS 12.3.3</span>
+      <span class="chip">SEBI CSCRF</span>
+      <span class="chip">RBI Q-SAFE</span>
+      <span class="chip">DST Task Force · 2027</span>
+      <span class="chip">DPDP Act 2023</span>
+    </div>
+  </section>
+
+  <footer>
+    <div class="meta">
+      <span><b>Tool</b> &nbsp;seqr-scanner 0.1.0 · SeQr Labs</span>
+      <span><b>Format</b> &nbsp;CycloneDX 1.6 CBOM</span>
+      <span><b>Scan method</b> &nbsp;Passive TLS · 6.4s</span>
+      <span><b>Confidence</b> &nbsp;High (direct origin, no CDN)</span>
+    </div>
+    <p class="disc">
+      <b>Passive-scan note.</b> Findings reflect the cryptography this server advertised at scan time.
+      A passive scan cannot confirm the <i>absence</i> of hybrid post-quantum support; an active
+      ML-KEM handshake probe settles that. <br>
+      <b>HNDL disclaimer.</b> Harvest-now-decrypt-later exposure scores are predictive cryptographic
+      risk metrics based on data-type endurance, not indicators of active data interception or confirmed
+      network breaches.
+    </p>
+  </footer>
+</div>
+<style>
+  @page{ size:A4; margin:0 }
+  html,body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; background:#0B0E14 }
+  .wrap{ max-width:none; padding:34px 44px 44px }
+  section{ break-inside:avoid }
+  .assets,.rec .item,.kv{ break-inside:avoid }
+</style>

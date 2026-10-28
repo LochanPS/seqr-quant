@@ -1,0 +1,67 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: seqr
+      POSTGRES_USER: seqr
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seqr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - reports:/app/reports
+    environment:
+      DATABASE_URL: postgresql+asyncpg://seqr:${DB_PASSWORD}@db:5432/seqr
+      REDIS_URL: redis://redis:6379/0
+      DEPLOYMENT_MODE: onprem
+      USE_FAKE_REDIS: "false"
+
+  worker:
+    build:
+      context: .
+      dockerfile: celery_worker.Dockerfile
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file: .env
+    volumes:
+      - reports:/app/reports
+    environment:
+      DATABASE_URL: postgresql+asyncpg://seqr:${DB_PASSWORD}@db:5432/seqr
+      REDIS_URL: redis://redis:6379/0
+      USE_FAKE_REDIS: "false"
+
+volumes:
+  db_data:
+  redis_data:
+  reports:

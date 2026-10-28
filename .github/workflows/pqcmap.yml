@@ -1,0 +1,119 @@
+name: pqcmap
+
+# Test + release pipeline for the pqcmap SDK (monorepo subdir: pqcmap/).
+#
+#  push / PR touching pqcmap/**  -> test matrix only
+#  tag  pqcmap-v*                -> test -> build -> TestPyPI dry-run -> PyPI publish
+#
+# Publishing uses PyPI Trusted Publishing (OIDC) — no stored token. The real upload is
+# gated two ways: it runs ONLY on a `pqcmap-v*` tag (which the maintainer pushes), and
+# the `pypi` job targets a GitHub Environment you can additionally require approval on.
+
+on:
+  push:
+    paths:
+      - "pqcmap/**"
+      - ".github/workflows/pqcmap.yml"
+    tags:
+      - "pqcmap-v*"
+  pull_request:
+    paths:
+      - "pqcmap/**"
+      - ".github/workflows/pqcmap.yml"
+
+# Least privilege by default; publish jobs opt into id-token below.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: pqcmap
+
+jobs:
+  test:
+    name: test (${{ matrix.os }} · py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pqcmap + dev deps (real PQC backend)
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+
+      - name: Show active backend
+        run: python -c "import pqcmap; print('backend:', pqcmap.backend(), 'available:', pqcmap.available())"
+
+      - name: Run the suite on the real backend
+        run: python -m pytest -q
+
+  build:
+    name: build sdist + wheel
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/pqcmap-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        run: python -m pip install --upgrade build && python -m build
+
+      - name: Check metadata
+        run: python -m pip install --upgrade twine && python -m twine check dist/*
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: pqcmap-dist
+          path: pqcmap/dist/
+
+  testpypi:
+    name: TestPyPI dry-run
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/pqcmap-v')
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write   # OIDC trusted publishing
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: pqcmap-dist
+          path: dist/
+
+      - name: Publish to TestPyPI (dry-run)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true   # a re-tagged version shouldn't fail the dry-run
+
+  pypi:
+    name: Publish to PyPI
+    needs: testpypi
+    if: startsWith(github.ref, 'refs/tags/pqcmap-v')
+    runs-on: ubuntu-latest
+    environment: pypi   # add required reviewers here for a manual approval gate
+    permissions:
+      id-token: write   # OIDC trusted publishing — no stored token
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: pqcmap-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

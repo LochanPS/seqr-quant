@@ -1,0 +1,75 @@
+name: PQC Scan
+
+# Post-quantum crypto gate for pull requests. Flags quantum-vulnerable cryptography
+# introduced on the PR's changed lines, posts a review comment, and (in advisory mode)
+# never breaks the build. Flip to a hard gate by setting `policy` or `fail-on` below.
+
+on:
+  pull_request:
+    paths:
+      - "**/*.py"
+      - "**/*.js"
+      - "**/*.ts"
+      - "**/*.java"
+      - "**/*.go"
+
+permissions:
+  contents: read
+  pull-requests: write     # post the review comment
+  security-events: write   # upload SARIF to code scanning (inline annotations)
+
+jobs:
+  pqc-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the gate diffs against the base branch
+
+      - name: SeQr PQC gate
+        id: pqc
+        uses: ./.github/actions/seqr-pqc
+        with:
+          path: "."
+          base: ${{ github.event.pull_request.base.ref }}
+          install-spec: "./cli"   # use this repo's CLI; drop for `pip install seqr`
+          # --- gating (all optional; advisory by default) ---
+          # policy: "strict"          # fail on high+ severity findings, OR:
+          # fail-on-drift: "true"     # fail on NEW drift from the crypto policy
+          # policy-file: "seqr-policy.json"   # else auto-discovered / built-in baseline
+          # baseline: "seqr-baseline.json"    # accept legacy findings; only new drift fails
+          # config: "seqr-ci.yml"             # or set the above as repo defaults
+          # --- optional: sync PR findings into the SeQr dashboard/CBOM ---
+          # api-url: "https://api.seqrlabs.com/api/v1"
+          # api-key: ${{ secrets.SEQR_API_KEY }}   # feature-flagged: omit to disable
+        continue-on-error: true    # advisory by default; report without blocking
+
+      - name: Post PQC review comment
+        if: always() && steps.pqc.outputs.comment-file != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = process.env.COMMENT_FILE;
+            if (!path || !fs.existsSync(path)) return;
+            const body = fs.readFileSync(path, 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+        env:
+          COMMENT_FILE: ${{ steps.pqc.outputs.comment-file }}
+
+      - name: Enforce gate result
+        if: always()
+        run: |
+          # Mirror the gate's own exit code as the job result. With continue-on-error
+          # above, the job stays green in advisory mode and turns red only when a
+          # policy/fail-on threshold trips.
+          if [ "${{ steps.pqc.outcome }}" = "failure" ]; then
+            echo "PQC gate tripped its severity threshold."
+            exit 1
+          fi

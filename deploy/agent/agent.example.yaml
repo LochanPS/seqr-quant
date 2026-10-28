@@ -1,0 +1,71 @@
+# SeQr discovery agent — example config (PRD 15).
+# Read-only internal crypto inventory. Copy to agent.yaml and edit for your perimeter.
+#
+# Secrets never belong in this file — pass the credential via the AGENT_KEY env var
+# (SEQR_API / AGENT_NAME / AGENT_KEYFILE also override the matching fields).
+
+name: dc-mumbai-agent
+mode: connected            # connected = POST to the platform; airgap = write a signed file
+api: http://seqr.internal:8000/api/v1
+credential: ""             # leave empty; set AGENT_KEY in the environment instead
+keyfile: ./.agent_ed25519.pem
+export_path: ./seqr-agent-export.json   # only used in airgap mode
+timeout: 60
+
+# Enable only the sources this host can see. Omit a key (or set it to false) to disable it.
+plugins:
+  # 1) Live TLS listeners inside the perimeter.
+  tls:
+    timeout: 8
+    targets:
+      - {host: lb-01.internal, port: 443, role: load-balancer}
+      - {host: api-gw.internal, port: 8443, role: api-gateway}
+      - {host: ldap.internal, port: 636, role: directory}
+
+  # 2) Certificate stores on disk + the host's OS trust store.
+  cert_store:
+    include_os_trust: true
+    paths:
+      - /etc/ssl/certs
+      - /etc/nginx/ssl
+      - /opt/app/certs
+    max_files: 2000
+
+  # 3) Reverse-proxy / load-balancer TLS configuration (parsed, not executed).
+  proxy_conf:
+    nginx:
+      - /etc/nginx/nginx.conf
+      - /etc/nginx/conf.d
+    haproxy:
+      - /etc/haproxy/haproxy.cfg
+
+  # 4) HSM slot inventory over PKCS#11 (public objects + mechanisms only; never key material).
+  #    Requires PyKCS11 and the vendor module. Omit if you have no HSM.
+  pkcs11:
+    module: /usr/lib/softhsm/libsofthsm2.so
+    label: null
+    pin: null
+
+  # 5) SSH endpoints — offered key-exchange + host-key algorithms (KEXINIT, no login).
+  #    Reuses the shared scanner's ssh module; needs seqr-scanner installed.
+  ssh:
+    timeout: 10
+    targets:
+      - {host: bastion.internal, port: 22, role: bastion}
+      - {host: git.internal, port: 22, role: scm}
+
+  # 6) Kubernetes — TLS secrets (public leaf only), cert-manager Certificates, Ingress TLS.
+  #    Read-only ServiceAccount (get/list on secrets, ingresses, cert-manager certificates),
+  #    or a kubeconfig. NEVER reads tls.key. Requires the `kubernetes` client.
+  k8s:
+    namespaces: []            # empty = every namespace the credential can list
+    include_cert_manager: true
+    include_ingress: true
+    kubeconfig: null          # null = in-cluster ServiceAccount
+
+  # 7) Cloud managed certificates. Pilot provider: AWS ACM (list + describe, read-only).
+  #    Credentials come from the host role / environment — never put a secret here.
+  #    Requires boto3. (Azure Key Vault / GCP slot in behind the same `provider` switch.)
+  cloud:
+    provider: aws
+    region: ap-south-1

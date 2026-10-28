@@ -1,0 +1,103 @@
+{
+  "language": "java",
+  "version": "1.4.0",
+  "patterns": [
+    {
+      "id": "JAVA-RSA-KEYGEN",
+      "description": "Java KeyPairGenerator RSA key generation",
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 8,
+      "confidence": "high",
+      "imports": ["java.security"],
+      "functions": ["getInstance", "generateKeyPair", "initialize"],
+      "algorithm_strings": ["RSA", "\"RSA\""],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) — upgrade to BouncyCastle PQC or wait for Java 21+ JCA PQC",
+      "estimated_effort_hours": 12
+    },
+    {
+      "id": "JAVA-ECDSA",
+      "description": "Java ECDSA / EC key generation",
+      "algorithm": "ECDSA",
+      "algorithm_family": "ECC",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 7,
+      "confidence": "high",
+      "imports": ["java.security"],
+      "functions": ["getInstance", "generateKeyPair"],
+      "algorithm_strings": ["EC", "ECDSA", "\"EC\"", "\"ECDSA\""],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) via BouncyCastle PQC",
+      "estimated_effort_hours": 12
+    },
+    {
+      "id": "JAVA-DH-001",
+      "description": "Java Diffie-Hellman key agreement",
+      "algorithm": "DH",
+      "algorithm_family": "DH",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 8,
+      "confidence": "high",
+      "imports": ["javax.crypto"],
+      "functions": ["getInstance", "generateSecret"],
+      "algorithm_strings": ["DiffieHellman", "DH", "ECDH", "\"DH\"", "\"ECDH\""],
+      "recommended_replacement": "ML-KEM-768 (FIPS 203) via BouncyCastle PQC",
+      "estimated_effort_hours": 16
+    },
+    {
+      "id": "JAVA-SPRING-JWT",
+      "description": "Spring Security / JJWT RSA JWT signing",
+      "algorithm": "RSA-SHA256",
+      "algorithm_family": "RSA",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 8,
+      "confidence": "high",
+      "imports": ["io.jsonwebtoken", "com.nimbusds.jwt", "org.springframework.security.oauth2"],
+      "functions": ["signWith", "sign", "verifyWith"],
+      "algorithm_strings": ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) — wait for JJWT PQC support or use BouncyCastle directly",
+      "estimated_effort_hours": 8
+    },
+    {
+      "id": "JAVA-BOUNCY-RSA",
+      "description": "BouncyCastle RSA key generation",
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 8,
+      "confidence": "high",
+      "imports": ["org.bouncycastle.crypto", "org.bouncycastle.jce"],
+      "functions": ["RSAKeyPairGenerator", "generateKeyPair", "init"],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) — BouncyCastle has org.bouncycastle.pqc.crypto.crystals",
+      "estimated_effort_hours": 8
+    },
+    {
+      "id": "JAVA-CIPHER-RSA",
+      "description": "Java Cipher RSA encrypt/decrypt",
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 8,
+      "confidence": "high",
+      "imports": ["javax.crypto"],
+      "functions": ["getInstance", "doFinal"],
+      "algorithm_strings": ["RSA/ECB/PKCS1Padding", "RSA/ECB/OAEPWithSHA-256AndMGF1Padding", "\"RSA\""],
+      "recommended_replacement": "ML-KEM-768 (FIPS 203) for encryption",
+      "estimated_effort_hours": 12
+    },
+    {
+      "id": "JAVA-TLS-RSA",
+      "description": "Java SSLContext with RSA-only cipher suites",
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 7,
+      "confidence": "medium",
+      "imports": ["javax.net.ssl"],
+      "functions": ["getInstance", "init", "createSSLEngine"],
+      "algorithm_strings": ["TLSv1", "TLSv1.1", "SSLv3", "TLS_RSA"],
+      "recommended_replacement": "TLS 1.3 with ML-KEM-768 hybrid key exchange",
+      "estimated_effort_hours": 6
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "domain": "expired.badssl.com",
+  "captured": "2026-06-13",
+  "notes": "RSA-2048 cert that is past its notAfter date. cert_expired must be True. threat_timeline=immediate.",
+  "expected": {
+    "reachable": true,
+    "cert_algorithm": "RSA",
+    "cert_key_size": 2048,
+    "cert_expired": true,
+    "key_exchange_algorithm": "RSA",
+    "tls_version": "TLS_1_2",
+    "hybrid_status": "none",
+    "pqc_hybrid_offered": false,
+    "hndl_risk": true,
+    "final_algorithm_risk": 8,
+    "quantum_status": "vulnerable",
+    "threat_timeline": "immediate"
+  }
+}

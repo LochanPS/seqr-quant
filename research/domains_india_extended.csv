@@ -1,0 +1,41 @@
+domain,entity,entity_type,country
+cred.club,CRED,fintech,IN
+slice.com,Slice,fintech,IN
+jupiter.money,Jupiter,neobank,IN
+fi.money,Fi,neobank,IN
+navi.com,Navi,nbfc,IN
+getsimpl.com,Simpl,bnpl,IN
+getonecard.app,OneCard,fintech,IN
+khatabook.com,Khatabook,fintech,IN
+open.money,Open,neobank,IN
+kreditbee.in,KreditBee,nbfc,IN
+lazypay.in,LazyPay,bnpl,IN
+moneyview.in,MoneyView,nbfc,IN
+setu.co,Setu,fintech_infra,IN
+decentro.tech,Decentro,fintech_infra,IN
+easebuzz.in,Easebuzz,payment_gateway,IN
+instamojo.com,Instamojo,payment_gateway,IN
+atomtech.in,Atom,payment_gateway,IN
+hdfcbank.com,HDFC Bank,bank,IN
+icicibank.com,ICICI Bank,bank,IN
+axisbank.com,Axis Bank,bank,IN
+kotak.com,Kotak,bank,IN
+yesbank.in,Yes Bank,bank,IN
+idfcfirstbank.com,IDFC First,bank,IN
+federalbank.co.in,Federal Bank,bank,IN
+indusind.com,IndusInd,bank,IN
+bankofbaroda.in,Bank of Baroda,bank,IN
+canarabank.com,Canara Bank,bank,IN
+policybazaar.com,PolicyBazaar,insurance,IN
+acko.com,Acko,insurance,IN
+godigit.com,Digit,insurance,IN
+insurancedekho.com,InsuranceDekho,insurance,IN
+kuvera.in,Kuvera,wealth_mgmt,IN
+etmoney.com,ETMoney,wealth_mgmt,IN
+scripbox.com,Scripbox,wealth_mgmt,IN
+5paisa.com,5paisa,brokerage,IN
+motilaloswal.com,Motilal Oswal,brokerage,IN
+dhan.co,Dhan,brokerage,IN
+groww.in,Groww,brokerage,IN
+worldline.com,Worldline India,payment_gateway,IN
+mswipe.com,Mswipe,pos,IN

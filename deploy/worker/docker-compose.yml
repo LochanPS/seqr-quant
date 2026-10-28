@@ -1,0 +1,76 @@
+# Full async-scan stack: Postgres + Redis + API + dedicated scan worker.
+#
+# This is the real-worker topology A6 stands up: scans run on the `worker` service
+# (CELERY_ALWAYS_EAGER=false), not inline in the request. The API enqueues to Redis
+# and returns a job id immediately; the worker runs the scan and streams live
+# progress back over the WS channel (scan:{id}) that the API relays.
+#
+# Build context is the repo root (seqr-labs/) so both images can install
+# ../../shared-scanner. Run from the repo root:
+#
+#   docker compose -f deploy/worker/docker-compose.yml up --build
+#
+# Scale the worker pool: docker compose -f deploy/worker/docker-compose.yml up --scale worker=3
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: seqr
+      POSTGRES_USER: seqr
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-seqr_dev}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seqr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: audit/backend/Dockerfile.render
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment: &scan_env
+      DATABASE_URL: postgresql+asyncpg://seqr:${DB_PASSWORD:-seqr_dev}@db:5432/seqr
+      REDIS_URL: redis://redis:6379/0
+      USE_FAKE_REDIS: "false"
+      CELERY_ALWAYS_EAGER: "false"
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-in-production-0123456789abcd}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEPLOYMENT_MODE: onprem
+      MAX_CONCURRENT_SCANS_PER_ORG: ${MAX_CONCURRENT_SCANS_PER_ORG:-3}
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      <<: *scan_env
+      SCAN_WORKER_CONCURRENCY: ${SCAN_WORKER_CONCURRENCY:-8}
+
+volumes:
+  db_data:
+  redis_data:

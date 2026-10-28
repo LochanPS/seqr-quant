@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Cover Page -->
+<div class="cover">
+  <div class="eyebrow">SeQr Labs &nbsp;·&nbsp; POST-QUANTUM ASSESSMENT &nbsp;·&nbsp; CONFIDENTIAL</div>
+  <h1>Post-Quantum Cryptography</h1>
+  <h2>Risk Assessment — Executive Summary</h2>
+  <div class="org">{{ org_name }}</div>
+  <div class="rule"></div>
+  <div class="meta">
+    <div>Organisation: {{ org_name }}</div>
+    <div>Assets Scanned: {{ total_assets }}</div>
+    <div>Generated: {{ generated_at }}</div>
+    <div>Report ID: {{ report_id }}</div>
+  </div>
+</div>
+
+<!-- Executive Summary -->
+<div class="page">
+  <h2>Executive Summary</h2>
+  <div style="display:flex;gap:30px;margin:20px 0">
+    <div class="section-box" style="flex:1;text-align:center">
+      <div class="label">Quantum Risk Score</div>
+      <div class="risk-score">{{ risk_score }}</div>
+      <div class="label">out of 100</div>
+      <div class="badge badge-{{ 'safe' if risk_label in ['low'] else 'urgent' if risk_label == 'medium' else 'vuln' }}"
+           style="margin-top:8px;display:inline-block">{{ risk_label|upper }}</div>
+    </div>
+    <div style="flex:2">
+      <h3>Key Findings</h3>
+      <ul style="padding-left:20px;margin-top:8px">
+        <li>{{ vulnerable_count }} quantum-vulnerable cryptographic components identified</li>
+        <li>{{ hndl_count }} component(s) at Harvest-Now Decrypt-Later risk</li>
+        <li>{{ immediate_count }} finding(s) require immediate action</li>
+        <li>Mapped to {{ compliance_names }}</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Compliance Status</h2>
+  <table>
+    <tr><th style="width:24%">Framework</th><th style="width:14%">Status</th><th>Notes</th></tr>
+    {% for fw, data in compliance.items() %}
+    <tr>
+      <td><b>{{ fw|fw_display }}</b></td>
+      <td>
+        <span class="badge badge-{{
+          'safe' if data.status == 'PASS'
+          else 'vuln' if data.status == 'FAIL'
+          else 'urgent' if data.status == 'PARTIAL'
+          else 'monitor' }}">{{ data.status }}</span>
+      </td>
+      <td>{{ data.message }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h2>Top 5 Priority Actions</h2>
+  <table>
+    <tr><th style="width:6%">#</th><th>Action</th><th style="width:18%">Timeline</th><th style="width:14%">Effort</th></tr>
+    {% for item in top_actions[:5] %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ item.action }}</td>
+      <td><span class="badge badge-{{
+        'immediate' if item.timeline == 'IMMEDIATE'
+        else 'urgent' if item.timeline == 'URGENT'
+        else 'planned' if item.timeline == 'PLANNED'
+        else 'monitor' }}">{{ item.timeline }}</span></td>
+      <td>{{ item.effort_hours }} h</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="section-box" style="margin-top:24px">
+    <h3>About Post-Quantum Cryptography</h3>
+    <p style="margin-top:8px;font-size:10pt">
+    Quantum computers running Shor's algorithm will break RSA and elliptic-curve
+    cryptography. While no cryptographically relevant quantum computer exists today,
+    adversaries are collecting encrypted traffic now for future decryption
+    (Harvest-Now Decrypt-Later). NIST finalised post-quantum standards in August 2024.
+    India's DST Task Force published a migration roadmap in February 2026. Migration
+    typically takes 42–54 months — organisations should begin now.
+    </p>
+  </div>
+
+  <h2>Methodology &amp; Provenance</h2>
+  <p class="muted"><b>Tool:</b> SeQr scanner — sslyze 6.0 for passive TLS analysis and an
+    OpenSSL 3.5+ ML-KEM ClientHello for <b>active</b> post-quantum detection (passive
+    scanning alone cannot confirm hybrid PQC support).</p>
+  <p class="muted"><b>Method:</b> passive measurement plus an active key-exchange probe.
+    No authentication, no exploitation, no data exfiltration — equivalent to a single
+    ordinary client connection, rate-limited.</p>
+  <p class="muted"><b>Coverage:</b> TLS (443), SSH key exchange + host keys (22), mail
+    STARTTLS (SMTP / IMAP / POP3), and database TLS (PostgreSQL).</p>
+  <p class="muted"><b>Scan confidence:</b> high = direct connection; medium = cloud-provider
+    IP; low = CDN-terminated (origin configuration is not externally observable).</p>
+  <p class="muted"><b>Not assessed:</b> origin servers behind CDNs, application-layer data
+    handling, and internal / non-public services. <b>Assessment date:</b> {{ generated_at }}.</p>
+
+  <div style="margin-top:20px;font-size:8pt;color:#64748B;border-top:1px solid #E2E8F0;padding-top:8px">
+    <b>HNDL Disclaimer:</b> HNDL exposure scores are predictive cryptographic risk metrics
+    based on data-type endurance, not indicators of active data interception or confirmed
+    network breaches.
+  </div>
+  <div class="confidential">
+    CONFIDENTIAL — SeQr Labs PQC Assessment — {{ org_name }} — {{ generated_at }}
+  </div>
+</div>
+{% endblock %}

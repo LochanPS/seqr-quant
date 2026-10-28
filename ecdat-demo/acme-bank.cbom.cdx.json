@@ -1,0 +1,962 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:d25bfd2f-23dd-474c-bbc5-d9e0de9faacf",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-09-19T13:10:27.311585+00:00",
+    "tools": [
+      {
+        "vendor": "SeQr Labs",
+        "name": "seqr-scanner",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "1e657186-3124-4180-bee9-f60fa4cfcd2a",
+      "name": "RSA-SHA256",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA-SHA256",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\auth\\tokens.py:24",
+            "line": 24
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 via seqr-scanner SDK"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "548275ba-a6ff-46af-96ac-11b33f561ccd",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java:13",
+            "line": 13
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) \u2014 upgrade to BouncyCastle PQC or wait for Java 21+ JCA PQC"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "f9b04b80-a8e2-4dd4-be86-b57c75594087",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java:15",
+            "line": 15
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) \u2014 upgrade to BouncyCastle PQC or wait for Java 21+ JCA PQC"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "0eaee09f-474a-4d06-878d-d81533828548",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java:14",
+            "line": 14
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) \u2014 upgrade to BouncyCastle PQC or wait for Java 21+ JCA PQC"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "6e899142-77ad-4e54-98f9-359297a923eb",
+      "name": "ECDSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "parameterSetIdentifier": "ECDSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java:13",
+            "line": 13
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "7"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "5.6"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) via BouncyCastle PQC"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "3b868e96-c493-41fe-afca-433bddbeeae8",
+      "name": "ECDSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "parameterSetIdentifier": "ECDSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java:15",
+            "line": 15
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "7"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "5.6"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) via BouncyCastle PQC"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "70308138-af28-403e-93ed-0760a900d332",
+      "name": "ECDSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "parameterSetIdentifier": "ECDSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\gateway\\ecdsa_gateway.go:13",
+            "line": 13
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "7"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "5.6"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) via cloudflare/circl"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "a7e55742-7899-4deb-826e-dba378420900",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\gateway\\rsa_gateway.go:12",
+            "line": 12
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) via cloudflare/circl or open-quantum-safe/liboqs-go"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "1b3c5792-2f05-463a-b4fe-52b49a3edda9",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\infra\\ssh_deploy.py:12",
+            "line": 12
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "7"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "5.6"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "Ed25519 (interim) \u2192 PQC SSH when OpenSSH adds support"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "17be247f-df42-4e2a-af57-a2927032d4cb",
+      "name": "DH",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "key-agreement",
+          "parameterSetIdentifier": "DH",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\payments\\legacy_dh.py:8",
+            "line": 8
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-KEM-768 (FIPS 203)"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "24749d9a-a30a-4679-9a1c-090ece90f7c2",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\payments\\rsa_keys.py:8",
+            "line": 8
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "6c4714c0-5a21-4d38-9ce6-13b690bd5d5e",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\web\\src\\auth.js:9",
+            "line": 9
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "750dea13-091a-4fc5-8ce4-8aa900d3e3be",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\web\\src\\auth.js:22",
+            "line": 22
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "a36234a1-8b4c-433b-834b-0dbd8b4280bf",
+      "name": "RSA-SHA256",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA-SHA256",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\web\\src\\auth.js:16",
+            "line": 16
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 via seqr-scanner SDK"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "cd1e5350-9c59-473b-b38a-fc548f8e4b51",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\web\\src\\legacy_crypto.js:9",
+            "line": 9
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "e751a804-4342-4e7d-9a76-26f69be1830a",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "library",
+        "algorithmProperties": {
+          "primitive": "public-key-encryption",
+          "parameterSetIdentifier": "RSA",
+          "classical": true
+        },
+        "relatedCryptoMaterialProperties": {
+          "type": "code",
+          "size": null
+        }
+      },
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "C:\\Users\\pokka\\PQC\\ecdat-demo\\sample-repo\\web\\src\\legacy_crypto.js:14",
+            "line": 14
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "seqr:quantum_status",
+          "value": "vulnerable"
+        },
+        {
+          "name": "seqr:algorithm_risk",
+          "value": "8"
+        },
+        {
+          "name": "seqr:final_risk_score",
+          "value": "6.4"
+        },
+        {
+          "name": "seqr:hndl_risk",
+          "value": "True"
+        },
+        {
+          "name": "seqr:migration_priority",
+          "value": "high"
+        },
+        {
+          "name": "seqr:threat_timeline",
+          "value": "immediate"
+        },
+        {
+          "name": "seqr:recommended_algorithm",
+          "value": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange"
+        },
+        {
+          "name": "seqr:recommended_fips",
+          "value": "FIPS 204 / FIPS 203"
+        }
+      ]
+    }
+  ]
+}

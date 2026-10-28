@@ -1,0 +1,99 @@
+# SeQr — single-VM production stack for Oracle Cloud Always Free (Mumbai / ap-mumbai-1).
+#
+# One Ampere A1 box hosts everything: Postgres (persistent volume — no 30-day
+# deletion), Redis (WS pub/sub + rate limiting), the backend, and Caddy for
+# automatic HTTPS. Data at rest lives in India → kills the Render-Singapore
+# residency contradiction. Always-on → no cold-start.
+#
+# Lives at the REPO ROOT so the backend build context is the repo root and
+# shared-scanner/ is in scope (same as render.yaml + Dockerfile.render).
+#
+# Run from the repo root on the VM:
+#   docker compose -f docker-compose.oracle.yml --env-file deploy/oracle/.env up -d --build
+#
+# Frontend stays on Vercel (static, no PII at rest); point NEXT_PUBLIC_API_URL
+# at https://api.seqrlabs.com/api/v1.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: seqr
+      POSTGRES_USER: seqr
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/oracle/.env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seqr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: .                                  # repo root → shared-scanner/ in context
+      dockerfile: audit/backend/Dockerfile.render  # trixie / OpenSSL 3.5 → active PQC probe
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file: deploy/oracle/.env
+    environment:
+      PORT: "8000"
+      DATABASE_URL: postgresql+asyncpg://seqr:${DB_PASSWORD}@db:5432/seqr
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: production
+      DEPLOYMENT_MODE: saas                         # no on-prem license gate
+      USE_FAKE_REDIS: "false"
+      CELERY_ALWAYS_EAGER: "true"                   # single box; flip false when worker added
+    volumes:
+      - reports:/app/backend/reports
+    expose:
+      - "8000"                                       # internal only; Caddy terminates TLS
+
+  # Uncomment to run scans async (frees the request thread). Then set
+  # CELERY_ALWAYS_EAGER=false on backend. The 24GB A1 box has headroom.
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: audit/backend/celery_worker.Dockerfile
+  #   restart: always
+  #   depends_on:
+  #     db: { condition: service_healthy }
+  #     redis: { condition: service_started }
+  #   env_file: deploy/oracle/.env
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://seqr:${DB_PASSWORD}@db:5432/seqr
+  #     REDIS_URL: redis://redis:6379/0
+  #     USE_FAKE_REDIS: "false"
+  #   volumes:
+  #     - reports:/app/backend/reports
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/oracle/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  db_data:
+  redis_data:
+  reports:
+  caddy_data:
+  caddy_config:

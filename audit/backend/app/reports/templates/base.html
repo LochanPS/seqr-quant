@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  /* SeQr design system — matches landing + dashboard + the ReportLab path.
+     amber #D7A352 accent · slate-900 ink · slate-50/200 surfaces ·
+     near-black cover + cream · emerald/rose/amber/violet status. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #0F172A;
+         font-size: 11pt; line-height: 1.5; }
+
+  /* Cover — near-black with cream + one restrained amber rule */
+  .cover { height: 100vh; position: relative; display: flex; flex-direction: column;
+           justify-content: center; padding: 60px; background: #0A0A0A; color: #EDE7DC; }
+  .cover .eyebrow { position: absolute; top: 56px; left: 60px;
+                    color: #D7A352; font-size: 8.5pt; font-weight: bold;
+                    letter-spacing: 0.08em; }
+  .cover h1 { font-size: 27pt; margin-bottom: 4px; color: #EDE7DC; }
+  .cover h2 { font-size: 15pt; font-weight: bold; color: #D7A352; margin-bottom: 18px; }
+  .cover .org { font-size: 13pt; color: #EDE7DC; margin-bottom: 14px; }
+  .cover .rule { width: 180px; height: 1.2px; background: #D7A352; margin-bottom: 22px; }
+  .cover .meta { font-size: 10pt; color: #9A958B; line-height: 1.7; }
+
+  .page { padding: 40px; page-break-after: always; }
+
+  h2 { font-size: 14pt; color: #0F172A;
+       border-bottom: 2px solid #D7A352;
+       padding-bottom: 6px; margin: 22px 0 12px; }
+  h3 { font-size: 11pt; color: #0F172A; margin: 16px 0 8px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10pt; }
+  th { background: #0F172A; color: #fff; padding: 8px; text-align: left; font-size: 9.5pt; }
+  td { padding: 7px 8px; border-bottom: 1px solid #E2E8F0; }
+  tr:nth-child(even) td { background: #F8FAFC; }
+
+  /* Restrained RAG status — bold colored text, no pills (audit-document, not web app).
+     Deeper/desaturated shades read more serious in print. */
+  .badge { font-size: 9pt; font-weight: bold; letter-spacing: 0.03em; white-space: nowrap; }
+  .badge-vuln { color: #B91C1C; }      /* red-700 */
+  .badge-safe { color: #047857; }      /* emerald-700 */
+  .badge-planned { color: #6D28D9; }   /* violet-700 */
+  .badge-urgent { color: #B45309; }    /* amber-700 */
+  .badge-immediate { color: #B91C1C; }
+  .badge-monitor { color: #475569; }   /* slate-600 */
+
+  .risk-score { font-size: 46pt; font-weight: bold; color: #0F172A; }
+  .section-box { border: 1px solid #E2E8F0; border-radius: 8px;
+                  padding: 16px; margin: 12px 0; background: #F8FAFC; }
+  .label { color: #64748B; font-size: 9pt; }
+  .check { color: #10B981; } .cross { color: #F43F5E; }
+  .muted { color: #64748B; font-size: 9pt; }
+  .confidential { color: #64748B; font-size: 9pt; text-align: center; margin-top: 20px; }
+</style>
+</head>
+<body>{% block content %}{% endblock %}</body>
+</html>

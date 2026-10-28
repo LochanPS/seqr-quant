@@ -1,0 +1,38 @@
+# SeQr auth/audit backend — Render Blueprint (must live at REPO ROOT).
+# Render > New + > Blueprint > pick this repo > Apply.
+# Fill the `sync: false` secrets in the dashboard after the service is created.
+services:
+  - type: web
+    name: seqr-backend
+    runtime: docker
+    dockerContext: .                              # repo root (so shared-scanner/ is in context)
+    dockerfilePath: ./audit/backend/Dockerfile.render
+    plan: free                                    # free web service (spins down when idle)
+    region: singapore                             # closest free region to India
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEPLOYMENT_MODE
+        value: saas                               # NOT onprem — onprem needs a LICENSE_KEY at boot
+      - key: USE_FAKE_REDIS
+        value: "false"
+      - key: CELERY_ALWAYS_EAGER
+        value: "true"                             # run scans inline; no paid worker needed
+      - key: SECRET_KEY
+        generateValue: true                       # Render generates a strong random value
+      - key: DATABASE_URL
+        fromDatabase:                             # auto-injected from seqr-db below; code adds the asyncpg driver
+          name: seqr-db
+          property: connectionString
+      - key: REDIS_URL
+        sync: false                               # Upstash rediss://... (the TLS connection URL, NOT the REST URL)
+      - key: FRONTEND_URL
+        sync: false                               # your Vercel URL (CORS)
+      - key: OPERATOR_EMAILS
+        sync: false                               # your founder email(s), comma-separated
+
+databases:
+  - name: seqr-db
+    plan: free                                    # free Postgres (Render deletes free PG after 30 days)
+    region: singapore

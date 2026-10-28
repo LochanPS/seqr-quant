@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pqcmap"
+version = "0.2.0"
+description = "Post-quantum cryptography for Python developers. Drop-in ML-KEM / ML-DSA primitives."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Lochan", email = "lochan@seqrlabs.com" }]
+maintainers = [{ name = "Lochan", email = "lochan@seqrlabs.com" }]
+keywords = [
+    "post-quantum",
+    "cryptography",
+    "PQC",
+    "ML-KEM",
+    "ML-DSA",
+    "Kyber",
+    "Dilithium",
+    "FIPS-203",
+    "FIPS-204",
+    "NIST",
+    "quantum-safe",
+    "crypto-agility",
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    # Pure-Python FIPS 203/204 backends — real ML-KEM / ML-DSA with no C toolchain,
+    # so pqcmap works out of the box everywhere (incl. Windows). Selected automatically
+    # when the faster native liboqs backend is not present.
+    "kyber-py>=1.2.0",
+    "dilithium-py>=1.4.0",
+    "cryptography>=42.0.0",
+]
+
+[project.optional-dependencies]
+# Faster native backend + extra algorithms (e.g. SLH-DSA). Prebuilt wheels cover most
+# Linux/macOS CI; on a bare Windows box liboqs builds from source (needs a C toolchain).
+liboqs = ["liboqs-python>=0.11.0"]
+dev = ["pytest>=8.0", "build>=1.0", "twine>=5.0"]
+
+[project.urls]
+Homepage = "https://seqrlabs.com/sdk"
+Repository = "https://github.com/LochanPS/SeQr-Labs"
+Documentation = "https://docs.seqrlabs.com/sdk"
+Issues = "https://github.com/LochanPS/SeQr-Labs/issues"
+Changelog = "https://github.com/LochanPS/SeQr-Labs/blob/main/pqcmap/CHANGELOG.md"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pqcmap*"]
+
+[tool.setuptools.package-data]
+# Ship the PEP 561 marker so downstream type-checkers pick up pqcmap's annotations.
+pqcmap = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

@@ -1,0 +1,6 @@
+# Generated PDF output only — NOT app/reports/ (the generator source).
+/reports/
+__pycache__/
+*.pyc
+.env
+*.db

@@ -1,0 +1,73 @@
+name: Release seqr-pqc action
+
+# Cut a versioned release of the composite action at .github/actions/seqr-pqc and move
+# the sliding major tag (seqr-pqc-v1) so consumers can pin `@seqr-pqc-v1`. Triggered by
+# pushing an exact release tag, e.g. `seqr-pqc-v1.0.0`.
+#
+# This does NOT submit to the GitHub Marketplace — that is a one-time manual UI step
+# (Releases → "Publish this Action to the Marketplace"), left to the founder. See
+# .github/actions/seqr-pqc/README.md.
+
+on:
+  push:
+    tags:
+      - "seqr-pqc-v*.*.*"
+
+permissions:
+  contents: write   # create the release and move the sliding major tag
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate action metadata
+        run: |
+          set -euo pipefail
+          f=".github/actions/seqr-pqc/action.yml"
+          test -f "$f" || { echo "::error::$f missing"; exit 1; }
+          python - "$f" <<'PY'
+          import sys, yaml
+          meta = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+          for key in ("name", "description", "runs"):
+              assert meta.get(key), f"action.yml missing required key: {key}"
+          # Marketplace requires branding on a listed action.
+          b = meta.get("branding") or {}
+          assert b.get("icon") and b.get("color"), "action.yml missing branding.icon/color"
+          assert meta["runs"].get("using") == "composite", "expected a composite action"
+          print(f"action.yml OK: {meta['name']!r}")
+          PY
+
+      - name: Resolve tags
+        id: tags
+        run: |
+          set -euo pipefail
+          full="${GITHUB_REF_NAME}"                 # e.g. seqr-pqc-v1.2.3
+          ver="${full#seqr-pqc-v}"                   # 1.2.3
+          major="seqr-pqc-v${ver%%.*}"              # seqr-pqc-v1
+          echo "full=$full"   >> "$GITHUB_OUTPUT"
+          echo "major=$major" >> "$GITHUB_OUTPUT"
+
+      - name: Move sliding major tag
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "${{ steps.tags.outputs.major }}" "${GITHUB_REF_NAME}"
+          git push -f origin "${{ steps.tags.outputs.major }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tags.outputs.full }}
+          name: "SeQr PQC Gate ${{ steps.tags.outputs.full }}"
+          body: |
+            SeQr PQC Gate composite action — `${{ steps.tags.outputs.full }}`.
+
+            Pin `LochanPS/SeQr-Labs/.github/actions/seqr-pqc@${{ steps.tags.outputs.major }}`
+            (sliding major) or `@${{ steps.tags.outputs.full }}` (exact).
+
+            See `.github/actions/seqr-pqc/README.md`. Marketplace submission is manual.

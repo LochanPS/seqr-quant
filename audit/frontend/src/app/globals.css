@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* shadcn neutral (slate) — light */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 28 77% 37%; /* burnt amber #A65A16 — unified with the landing brand */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 347 89% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 28 77% 37%;
+    --radius: 0.7rem;
+
+    /* Brand accent palette (rgb triplets) */
+    --quantum: 166 90 22; /* SeQr burnt amber #A65A16 — matches marketing-tokens */
+    --safe: 16 185 129; /* emerald-500 */
+    --vulnerable: 244 63 94; /* rose-500 */
+    --urgent: 245 158 11; /* amber-500 */
+    --planned: 139 92 246; /* violet-500 */
+  }
+
+  .dark {
+    /* SeQr design system — UNIFIED with the landing page (marketing-tokens.ts):
+       true black #000000, warm parchment ink #EDE7DC, burnt-amber accent #A65A16,
+       parchment-alpha borders/surfaces. Same look as the marketing sections. */
+    --background: 0 0% 0%; /* #000000 — true black, matches marketing.bg */
+    --foreground: 39 32% 90%; /* #EDE7DC — parchment ink */
+    --card: 40 10% 6%; /* surface — parchment @ ~0.04 lifted off pure black, warm */
+    --card-foreground: 39 32% 90%;
+    --popover: 40 10% 6%;
+    --popover-foreground: 39 32% 90%;
+    --primary: 28 77% 37%; /* accent #A65A16 */
+    --primary-foreground: 0 0% 0%; /* black text on amber, as GlowButton does */
+    --secondary: 40 6% 11%;
+    --secondary-foreground: 39 32% 90%;
+    --muted: 40 6% 11%;
+    --muted-foreground: 38 6% 57%; /* EDE7DC @ ~0.62 */
+    --accent: 28 45% 11%; /* accentSoft — burnt-amber tint (active nav / hovers) */
+    --accent-foreground: 39 32% 90%;
+    --destructive: 347 89% 60%; /* rose — semantic, unchanged */
+    --destructive-foreground: 210 40% 98%;
+    --border: 36 5% 10%; /* EDE7DC @ ~0.10 — warm hairline */
+    --input: 34 6% 15%; /* EDE7DC @ ~0.18 — borderStrong */
+    --ring: 28 77% 37%; /* accent */
+
+    --quantum: 166 90 22; /* SeQr burnt amber #A65A16 — matches marketing-tokens */
+    --safe: 16 185 129;
+    --vulnerable: 244 63 94;
+    --urgent: 245 158 11;
+    --planned: 139 92 246;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Marketing display typeface (Bricolage Grotesque) — marketing headlines. */
+  .font-display {
+    font-family: var(--font-display), system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Hero headline left-to-right mask reveal. CSS (not JS) so it always lands fully
+   open, and is suppressed entirely for reduced-motion users. */
+@keyframes reveal-ltr {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-ltr {
+    animation: reveal-ltr 0.7s ease-out both;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .quantum-grid {
+    background-image:
+      linear-gradient(to right, rgb(var(--quantum) / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--quantum) / 0.08) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .text-gradient-quantum {
+    background: linear-gradient(135deg, rgb(var(--quantum)), rgb(var(--planned)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .glow-quantum {
+    box-shadow: 0 0 0 1px rgb(var(--quantum) / 0.3), 0 0 24px -2px rgb(var(--quantum) / 0.35);
+  }
+}
+
+/* thin scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+}

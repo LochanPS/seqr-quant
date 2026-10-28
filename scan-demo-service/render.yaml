@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: seqr-scan-demo
+    runtime: docker
+    rootDir: .
+    dockerContext: ..
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: singapore
+    healthCheckPath: /health
+    envVars:
+      - key: FRONTEND_ORIGINS
+        value: https://seqrlabs.com,https://www.seqrlabs.com

@@ -1,0 +1,1410 @@
+[
+  {
+    "domain": "razorpay.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "sftp.razorpay.com",
+        "ip": "52.66.26.114"
+      },
+      {
+        "hostname": "secure.razorpay.com",
+        "ip": "13.232.110.208"
+      },
+      {
+        "hostname": "dev.razorpay.com",
+        "ip": "13.207.52.57"
+      },
+      {
+        "hostname": "api.razorpay.com",
+        "ip": "3.109.130.61"
+      },
+      {
+        "hostname": "mail.razorpay.com",
+        "ip": "142.250.194.243"
+      }
+    ],
+    "candidate_count": 5
+  },
+  {
+    "domain": "api.razorpay.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "checkout.razorpay.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "dashboard.razorpay.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "tokenisation.razorpay.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "payu.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "mail.payu.in",
+        "ip": "150.171.73.13"
+      },
+      {
+        "hostname": "secure.payu.in",
+        "ip": "3.33.169.243"
+      },
+      {
+        "hostname": "staging.payu.in",
+        "ip": "166.117.173.251"
+      },
+      {
+        "hostname": "test.payu.in",
+        "ip": "99.83.199.213"
+      }
+    ],
+    "candidate_count": 4
+  },
+  {
+    "domain": "api.payu.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "secure.payu.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "phonepe.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.phonepe.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "zerodha.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.zerodha.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "kite.zerodha.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "coin.zerodha.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "groww.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.groww.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "billdesk.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "uat.billdesk.com",
+        "ip": "223.30.150.155"
+      },
+      {
+        "hostname": "api.billdesk.com",
+        "ip": "210.210.24.190"
+      },
+      {
+        "hostname": "secure.billdesk.com",
+        "ip": "210.210.24.133"
+      },
+      {
+        "hostname": "mail.billdesk.com",
+        "ip": "210.210.24.67"
+      }
+    ],
+    "candidate_count": 4
+  },
+  {
+    "domain": "api.billdesk.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "ccavenue.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "direct.ccavenue.com",
+        "ip": "66.22.97.84"
+      },
+      {
+        "hostname": "api.ccavenue.com",
+        "ip": "66.22.97.86"
+      },
+      {
+        "hostname": "remote.ccavenue.com",
+        "ip": "122.182.6.220"
+      },
+      {
+        "hostname": "test.ccavenue.com",
+        "ip": "180.179.175.16"
+      },
+      {
+        "hostname": "mail.ccavenue.com",
+        "ip": "180.179.175.2"
+      },
+      {
+        "hostname": "secure.ccavenue.com",
+        "ip": "118.214.111.22"
+      },
+      {
+        "hostname": "admin.ccavenue.com",
+        "ip": "66.22.95.25"
+      }
+    ],
+    "candidate_count": 7
+  },
+  {
+    "domain": "api.ccavenue.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "cashfree.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "sftp.cashfree.com",
+        "ip": "3.6.209.121"
+      },
+      {
+        "hostname": "vpn.cashfree.com",
+        "ip": "13.234.249.24"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "api.cashfree.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "payments.cashfree.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "paytm.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "api.paytm.com",
+        "ip": "49.44.146.126"
+      },
+      {
+        "hostname": "staging.paytm.com",
+        "ip": "3.109.237.103"
+      },
+      {
+        "hostname": "secure.paytm.com",
+        "ip": "220.226.177.203"
+      },
+      {
+        "hostname": "gateway.paytm.com",
+        "ip": "23.220.98.135"
+      }
+    ],
+    "candidate_count": 4
+  },
+  {
+    "domain": "api.paytm.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "securegw.paytm.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "bharatpe.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.bharatpe.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "mobikwik.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "walletapi.mobikwik.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "freecharge.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.freecharge.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "instamojo.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "www2.instamojo.com",
+        "ip": "13.234.23.45"
+      },
+      {
+        "hostname": "mail.instamojo.com",
+        "ip": "172.217.174.83"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "api.instamojo.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "slice.is",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.slice.is",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "jupiter.money",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "imap.jupiter.money",
+        "ip": "162.215.2.36"
+      },
+      {
+        "hostname": "smtp.jupiter.money",
+        "ip": "208.91.199.223"
+      },
+      {
+        "hostname": "vpn.jupiter.money",
+        "ip": "182.72.89.30"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "api.jupiter.money",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "fi.money",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.fi.money",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "niyo.co",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "admin.niyo.co",
+        "ip": "66.33.60.35"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "api.niyo.co",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "open.money",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "ftp.open.money",
+        "ip": "13.127.163.224"
+      },
+      {
+        "hostname": "admin.open.money",
+        "ip": "13.206.5.219"
+      },
+      {
+        "hostname": "mail.open.money",
+        "ip": "207.189.185.5"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "cred.club",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.cred.club",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "upstox.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "uat.upstox.com",
+        "ip": "163.116.213.99"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "api.upstox.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "angelone.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "api.angelone.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "icicidirect.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "api.icicidirect.com",
+        "ip": "103.249.118.2"
+      },
+      {
+        "hostname": "secure.icicidirect.com",
+        "ip": "103.249.118.1"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "api.icicidirect.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "hdfcsec.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "api.hdfcsec.com",
+        "ip": "159.60.137.72"
+      },
+      {
+        "hostname": "portal.hdfcsec.com",
+        "ip": "13.207.228.166"
+      },
+      {
+        "hostname": "uat.hdfcsec.com",
+        "ip": "202.154.164.253"
+      },
+      {
+        "hostname": "mail.hdfcsec.com",
+        "ip": "103.109.211.65"
+      },
+      {
+        "hostname": "test.hdfcsec.com",
+        "ip": "220.226.179.231"
+      }
+    ],
+    "candidate_count": 5
+  },
+  {
+    "domain": "api.hdfcsec.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "indmoney.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "dev.indmoney.com",
+        "ip": "13.126.147.103"
+      },
+      {
+        "hostname": "api.indmoney.com",
+        "ip": "43.205.73.112"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "smallcase.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "sftp.smallcase.com",
+        "ip": "13.232.34.195"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "api.smallcase.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "mswipe.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "direct.mswipe.com",
+        "ip": "13.127.228.222"
+      },
+      {
+        "hostname": "mail.mswipe.com",
+        "ip": "114.31.230.16"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "pinelabs.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "mail.pinelabs.com",
+        "ip": "40.104.68.34"
+      },
+      {
+        "hostname": "admin.pinelabs.com",
+        "ip": "180.179.207.152"
+      },
+      {
+        "hostname": "ftp.pinelabs.com",
+        "ip": "122.160.150.52"
+      },
+      {
+        "hostname": "webmail.pinelabs.com",
+        "ip": "40.104.68.66"
+      },
+      {
+        "hostname": "dev.pinelabs.com",
+        "ip": "182.74.238.200"
+      },
+      {
+        "hostname": "vpn.pinelabs.com",
+        "ip": "122.160.149.18"
+      },
+      {
+        "hostname": "api.pinelabs.com",
+        "ip": "103.144.110.25"
+      }
+    ],
+    "candidate_count": 7
+  },
+  {
+    "domain": "api.pinelabs.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "juspay.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "portal.juspay.in",
+        "ip": "13.205.96.131"
+      },
+      {
+        "hostname": "api.juspay.in",
+        "ip": "13.235.129.166"
+      },
+      {
+        "hostname": "mail.juspay.in",
+        "ip": "216.58.203.51"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "api.juspay.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "slice.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "navi.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "mail.navi.com",
+        "ip": "142.250.67.19"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "getsimpl.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "webmail.getsimpl.com",
+        "ip": "162.0.229.213"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "getonecard.app",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "api.getonecard.app",
+        "ip": "3.108.124.95"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "khatabook.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "api.khatabook.com",
+        "ip": "13.201.162.128"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "kreditbee.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "lazypay.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "test.lazypay.in",
+        "ip": "52.74.147.41"
+      },
+      {
+        "hostname": "api.lazypay.in",
+        "ip": "35.154.102.30"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "moneyview.in",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "setu.co",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "sftp.setu.co",
+        "ip": "65.2.88.238"
+      },
+      {
+        "hostname": "uat.setu.co",
+        "ip": "13.232.17.62"
+      },
+      {
+        "hostname": "gateway.setu.co",
+        "ip": "13.234.27.155"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "decentro.tech",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "admin.decentro.tech",
+        "ip": "3.7.150.228"
+      },
+      {
+        "hostname": "gateway.decentro.tech",
+        "ip": "3.109.125.140"
+      },
+      {
+        "hostname": "internal.decentro.tech",
+        "ip": "15.206.181.162"
+      },
+      {
+        "hostname": "api.decentro.tech",
+        "ip": "13.233.5.16"
+      },
+      {
+        "hostname": "staging.decentro.tech",
+        "ip": "13.126.66.135"
+      },
+      {
+        "hostname": "vpn.decentro.tech",
+        "ip": "3.7.18.204"
+      }
+    ],
+    "candidate_count": 6
+  },
+  {
+    "domain": "easebuzz.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "admin.easebuzz.in",
+        "ip": "13.206.9.225"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "atomtech.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "mail.atomtech.in",
+        "ip": "203.114.240.101"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "hdfcbank.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "api.hdfcbank.com",
+        "ip": "175.100.162.132"
+      },
+      {
+        "hostname": "remote.hdfcbank.com",
+        "ip": "3.109.135.188"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "icicibank.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "api.icicibank.com",
+        "ip": "103.87.42.101"
+      },
+      {
+        "hostname": "webmail.icicibank.com",
+        "ip": "203.171.211.7"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "axisbank.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "old.axisbank.com",
+        "ip": "223.30.151.8"
+      },
+      {
+        "hostname": "uat.axisbank.com",
+        "ip": "104.211.97.138"
+      },
+      {
+        "hostname": "mail.axisbank.com",
+        "ip": "52.172.219.121"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "kotak.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "dev.kotak.com",
+        "ip": "13.234.167.105"
+      },
+      {
+        "hostname": "cpanel.kotak.com",
+        "ip": "115.112.253.22"
+      },
+      {
+        "hostname": "webmail.kotak.com",
+        "ip": "121.241.26.89"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "yesbank.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "mail.yesbank.in",
+        "ip": "123.136.23.103"
+      },
+      {
+        "hostname": "webmail.yesbank.in",
+        "ip": "123.136.23.104"
+      },
+      {
+        "hostname": "gateway.yesbank.in",
+        "ip": "3.109.25.218"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "idfcfirstbank.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "remote.idfcfirstbank.com",
+        "ip": "13.200.188.225"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "federalbank.co.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "remote.federalbank.co.in",
+        "ip": "61.95.141.144"
+      },
+      {
+        "hostname": "gateway.federalbank.co.in",
+        "ip": "61.95.141.171"
+      },
+      {
+        "hostname": "legacy.federalbank.co.in",
+        "ip": "61.95.141.177"
+      },
+      {
+        "hostname": "portal.federalbank.co.in",
+        "ip": "61.95.141.175"
+      },
+      {
+        "hostname": "uat.federalbank.co.in",
+        "ip": "141.226.255.218"
+      }
+    ],
+    "candidate_count": 5
+  },
+  {
+    "domain": "indusind.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "remote.indusind.com",
+        "ip": "103.41.11.196"
+      },
+      {
+        "hostname": "legacy.indusind.com",
+        "ip": "115.112.213.40"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "bankofbaroda.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "vpn.bankofbaroda.in",
+        "ip": "13.203.85.200"
+      },
+      {
+        "hostname": "dev.bankofbaroda.in",
+        "ip": "103.85.41.84"
+      },
+      {
+        "hostname": "mail.bankofbaroda.in",
+        "ip": "61.14.42.75"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "canarabank.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "policybazaar.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "vpn.policybazaar.com",
+        "ip": "3.7.229.165"
+      },
+      {
+        "hostname": "test.policybazaar.com",
+        "ip": "13.205.250.64"
+      },
+      {
+        "hostname": "sftp.policybazaar.com",
+        "ip": "122.160.107.108"
+      },
+      {
+        "hostname": "api.policybazaar.com",
+        "ip": "49.44.146.36"
+      }
+    ],
+    "candidate_count": 4
+  },
+  {
+    "domain": "acko.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "staging.acko.com",
+        "ip": "13.235.147.165"
+      },
+      {
+        "hostname": "mail.acko.com",
+        "ip": "172.217.174.83"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "godigit.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "ftp.godigit.com",
+        "ip": "50.63.202.32"
+      },
+      {
+        "hostname": "sftp.godigit.com",
+        "ip": "3.6.33.125"
+      },
+      {
+        "hostname": "vpn.godigit.com",
+        "ip": "35.154.240.100"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "insurancedekho.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "imap.insurancedekho.com",
+        "ip": "148.72.44.1"
+      },
+      {
+        "hostname": "smtp.insurancedekho.com",
+        "ip": "92.204.80.20"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "kuvera.in",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "uat.kuvera.in",
+        "ip": "13.207.228.190"
+      },
+      {
+        "hostname": "dev.kuvera.in",
+        "ip": "65.2.212.112"
+      },
+      {
+        "hostname": "api.kuvera.in",
+        "ip": "3.6.153.228"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "etmoney.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "origin.etmoney.com",
+        "ip": "202.41.28.145"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "scripbox.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "vpn.scripbox.com",
+        "ip": "13.228.165.94"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "5paisa.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "gateway.5paisa.com",
+        "ip": "49.44.136.18"
+      },
+      {
+        "hostname": "mail.5paisa.com",
+        "ip": "203.199.69.135"
+      },
+      {
+        "hostname": "test.5paisa.com",
+        "ip": "23.199.66.216"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "motilaloswal.com",
+    "country": "IN",
+    "candidates": [
+      {
+        "hostname": "smtp.motilaloswal.com",
+        "ip": "208.115.35.219"
+      },
+      {
+        "hostname": "webmail.motilaloswal.com",
+        "ip": "142.79.250.24"
+      },
+      {
+        "hostname": "remote.motilaloswal.com",
+        "ip": "13.234.159.186"
+      },
+      {
+        "hostname": "api.motilaloswal.com",
+        "ip": "121.244.93.46"
+      },
+      {
+        "hostname": "imap.motilaloswal.com",
+        "ip": "72.35.76.70"
+      },
+      {
+        "hostname": "ftp.motilaloswal.com",
+        "ip": "142.79.250.30"
+      }
+    ],
+    "candidate_count": 6
+  },
+  {
+    "domain": "dhan.co",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "worldline.com",
+    "country": "IN",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "stripe.com",
+    "country": "US",
+    "candidates": [
+      {
+        "hostname": "api.stripe.com",
+        "ip": "198.137.150.101"
+      },
+      {
+        "hostname": "mail.stripe.com",
+        "ip": "54.186.23.98"
+      },
+      {
+        "hostname": "sftp.stripe.com",
+        "ip": "54.244.197.42"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "api.stripe.com",
+    "country": "US",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "paypal.com",
+    "country": "US",
+    "candidates": [
+      {
+        "hostname": "smtp.paypal.com",
+        "ip": "64.4.244.68"
+      },
+      {
+        "hostname": "admin.paypal.com",
+        "ip": "173.0.88.10"
+      },
+      {
+        "hostname": "api.paypal.com",
+        "ip": "173.0.92.23"
+      },
+      {
+        "hostname": "mail.paypal.com",
+        "ip": "159.127.187.12"
+      }
+    ],
+    "candidate_count": 4
+  },
+  {
+    "domain": "api.paypal.com",
+    "country": "US",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "squareup.com",
+    "country": "US",
+    "candidates": [
+      {
+        "hostname": "origin.squareup.com",
+        "ip": "15.197.206.119"
+      },
+      {
+        "hostname": "mail.squareup.com",
+        "ip": "142.251.222.115"
+      },
+      {
+        "hostname": "vpn.squareup.com",
+        "ip": "65.50.201.2"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "plaid.com",
+    "country": "US",
+    "candidates": [
+      {
+        "hostname": "mail.plaid.com",
+        "ip": "172.217.174.83"
+      },
+      {
+        "hostname": "gateway.plaid.com",
+        "ip": "192.235.89.202"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "brex.com",
+    "country": "US",
+    "candidates": [
+      {
+        "hostname": "api.brex.com",
+        "ip": "52.25.146.187"
+      },
+      {
+        "hostname": "staging.brex.com",
+        "ip": "66.33.60.35"
+      },
+      {
+        "hostname": "mail.brex.com",
+        "ip": "216.58.203.51"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "chime.com",
+    "country": "US",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "coinbase.com",
+    "country": "US",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "gusto.com",
+    "country": "US",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "adyen.com",
+    "country": "EU",
+    "candidates": [
+      {
+        "hostname": "test.adyen.com",
+        "ip": "62.146.255.2"
+      },
+      {
+        "hostname": "mx.adyen.com",
+        "ip": "147.12.26.43"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "mollie.com",
+    "country": "EU",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "klarna.com",
+    "country": "EU",
+    "candidates": [
+      {
+        "hostname": "mail.klarna.com",
+        "ip": "192.178.173.121"
+      },
+      {
+        "hostname": "api.klarna.com",
+        "ip": "108.133.56.89"
+      },
+      {
+        "hostname": "sftp.klarna.com",
+        "ip": "34.246.94.185"
+      }
+    ],
+    "candidate_count": 3
+  },
+  {
+    "domain": "revolut.com",
+    "country": "EU",
+    "candidates": [
+      {
+        "hostname": "mail.revolut.com",
+        "ip": "172.217.174.83"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "wise.com",
+    "country": "EU",
+    "candidates": [
+      {
+        "hostname": "sftp.wise.com",
+        "ip": "3.74.57.184"
+      }
+    ],
+    "candidate_count": 1
+  },
+  {
+    "domain": "n26.com",
+    "country": "EU",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "monzo.com",
+    "country": "UK",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "starlingbank.com",
+    "country": "UK",
+    "candidates": [
+      {
+        "hostname": "api.starlingbank.com",
+        "ip": "34.243.234.7"
+      },
+      {
+        "hostname": "admin.starlingbank.com",
+        "ip": "52.18.110.235"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "gocardless.com",
+    "country": "UK",
+    "candidates": [],
+    "candidate_count": 0
+  },
+  {
+    "domain": "checkout.com",
+    "country": "UK",
+    "candidates": [
+      {
+        "hostname": "mail.checkout.com",
+        "ip": "142.250.195.19"
+      },
+      {
+        "hostname": "api.checkout.com",
+        "ip": "52.214.237.28"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "grab.com",
+    "country": "SG",
+    "candidates": [
+      {
+        "hostname": "portal.grab.com",
+        "ip": "13.228.178.181"
+      },
+      {
+        "hostname": "api.grab.com",
+        "ip": "18.136.238.179"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "nium.com",
+    "country": "SG",
+    "candidates": [
+      {
+        "hostname": "gateway.nium.com",
+        "ip": "52.214.123.66"
+      },
+      {
+        "hostname": "api.nium.com",
+        "ip": "34.248.144.242"
+      }
+    ],
+    "candidate_count": 2
+  },
+  {
+    "domain": "aspireapp.com",
+    "country": "SG",
+    "candidates": [
+      {
+        "hostname": "test.aspireapp.com",
+        "ip": "13.215.144.228"
+      },
+      {
+        "hostname": "api.aspireapp.com",
+        "ip": "166.117.114.146"
+      },
+      {
+        "hostname": "vpn.aspireapp.com",
+        "ip": "18.143.4.175"
+      },
+      {
+        "hostname": "sftp.aspireapp.com",
+        "ip": "13.250.79.223"
+      },
+      {
+        "hostname": "staging.aspireapp.com",
+        "ip": "13.213.126.12"
+      }
+    ],
+    "candidate_count": 5
+  },
+  {
+    "domain": "nubank.com.br",
+    "country": "BR",
+    "candidates": [
+      {
+        "hostname": "vpn.nubank.com.br",
+        "ip": "212.162.6.26"
+      }
+    ],
+    "candidate_count": 1
+  }
+]

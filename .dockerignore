@@ -1,0 +1,15 @@
+# Keep the Docker build context small. Backend image only needs
+# shared-scanner/ + audit/backend/ (see audit/backend/Dockerfile.render).
+.git
+**/__pycache__/
+**/*.pyc
+**/*.db
+**/.pytest_cache/
+**/node_modules/
+audit/frontend/
+cli/
+docs/
+research/
+gtm/
+scan-demo-service/
+*.log

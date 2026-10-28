@@ -1,0 +1,74 @@
+# SeQr — laptop bridge stack (₹0, no card, no cloud host).
+#
+# Runs the FULL production backend + Postgres + Redis on your own machine and
+# exposes it to the internet through a free Cloudflare Tunnel (see
+# deploy/local/RUN_LOCAL.md). Use this to get a live https://api.seqrlabs.com for
+# customer-discovery demos NOW, while the Oracle Always-Free VM (the always-on
+# endgame) is blocked on card verification.
+#
+# Same image as Oracle/Render (audit/backend/Dockerfile.render → OpenSSL 3.5
+# active PQC probe) and the same `alembic upgrade head` on boot, so what you demo
+# here is exactly what Oracle will run. Difference vs docker-compose.oracle.yml:
+# no Caddy (Cloudflare terminates TLS at its edge) and the backend is published
+# only on 127.0.0.1 (the tunnel connects locally; nothing is exposed on your LAN).
+#
+# Trade-off: only reachable while your machine is on + the tunnel is running. Fine
+# for scheduled demos; move to Oracle for always-on. Data lives on your machine in
+# India → residency is trivially satisfied.
+#
+# Run from the repo root:
+#   docker compose -f docker-compose.local.yml up -d --build
+#
+# (No --env-file needed: DB_PASSWORD defaults below, and the backend reads its
+#  secrets from deploy/local/.env via env_file:.)
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: seqr
+      POSTGRES_USER: seqr
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-seqr_local}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seqr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: .                                   # repo root → shared-scanner/ in context
+      dockerfile: audit/backend/Dockerfile.render   # trixie / OpenSSL 3.5 → active PQC probe
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file: deploy/local/.env
+    environment:
+      PORT: "8000"
+      DATABASE_URL: postgresql+asyncpg://seqr:${DB_PASSWORD:-seqr_local}@db:5432/seqr
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: production                        # real security headers + rate limiting
+      DEPLOYMENT_MODE: saas
+      USE_FAKE_REDIS: "false"
+      CELERY_ALWAYS_EAGER: "true"                    # single box; scans run in-request
+    ports:
+      - "127.0.0.1:8000:8000"                        # localhost only; cloudflared reaches it here
+    volumes:
+      - reports:/app/backend/reports
+
+volumes:
+  db_data:
+  redis_data:
+  reports:

@@ -1,0 +1,85 @@
+{
+  "language": "go",
+  "version": "1.4.0",
+  "patterns": [
+    {
+      "id": "GO-RSA-001",
+      "description": "Go crypto/rsa RSA key generation",
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 8,
+      "confidence": "high",
+      "imports": ["crypto/rsa"],
+      "functions": ["GenerateKey", "GenerateMultiPrimeKey", "EncryptOAEP", "DecryptOAEP", "SignPKCS1v15", "VerifyPKCS1v15", "SignPSS", "VerifyPSS"],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) via cloudflare/circl or open-quantum-safe/liboqs-go",
+      "estimated_effort_hours": 10
+    },
+    {
+      "id": "GO-ECDSA-001",
+      "description": "Go crypto/ecdsa ECDSA key generation",
+      "algorithm": "ECDSA",
+      "algorithm_family": "ECC",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 7,
+      "confidence": "high",
+      "imports": ["crypto/ecdsa"],
+      "functions": ["GenerateKey", "Sign", "Verify"],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) via cloudflare/circl",
+      "estimated_effort_hours": 10
+    },
+    {
+      "id": "GO-ECDH-001",
+      "description": "Go crypto/ecdh ECDH key exchange",
+      "algorithm": "ECDH",
+      "algorithm_family": "ECC",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 7,
+      "confidence": "high",
+      "imports": ["crypto/ecdh"],
+      "functions": ["GenerateKey", "ECDH", "NewPrivateKey", "NewPublicKey"],
+      "recommended_replacement": "ML-KEM-768 (FIPS 203) via cloudflare/circl",
+      "estimated_effort_hours": 12
+    },
+    {
+      "id": "GO-ELLIPTIC-001",
+      "description": "Go crypto/elliptic curve operations",
+      "algorithm": "ECDSA",
+      "algorithm_family": "ECC",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 7,
+      "confidence": "high",
+      "imports": ["crypto/elliptic"],
+      "functions": ["P224", "P256", "P384", "P521", "GenerateKey", "Marshal", "Unmarshal"],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) for signing, ML-KEM-768 (FIPS 203) for key exchange",
+      "estimated_effort_hours": 12
+    },
+    {
+      "id": "GO-JWT-RS256",
+      "description": "golang-jwt / jwt-go JWT signing with RSA or ECDSA",
+      "algorithm": "RSA-SHA256",
+      "algorithm_family": "RSA",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 8,
+      "confidence": "high",
+      "imports": ["github.com/golang-jwt/jwt", "github.com/dgrijalva/jwt-go"],
+      "algorithm_strings": ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "PS256", "PS384", "PS512"],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) — no official PQC JWT RFC yet; use custom claims",
+      "estimated_effort_hours": 6
+    },
+    {
+      "id": "GO-TLS-001",
+      "description": "Go crypto/tls with weak version or cipher config",
+      "algorithm": "TLS",
+      "algorithm_family": "TLS",
+      "quantum_status": "vulnerable",
+      "algorithm_risk": 7,
+      "confidence": "medium",
+      "imports": ["crypto/tls"],
+      "functions": ["Dial", "Listen", "NewListener", "Server", "Client"],
+      "algorithm_strings": ["VersionTLS10", "VersionTLS11", "VersionSSL30"],
+      "recommended_replacement": "TLS 1.3 with X25519Kyber768 hybrid key exchange",
+      "estimated_effort_hours": 4
+    }
+  ]
+}

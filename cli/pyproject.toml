@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seqr"
+version = "0.1.1"
+description = "PQC readiness scanner for Indian financial infrastructure"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Lochan P S", email = "contact@seqrlabs.com" }]
+keywords = ["post-quantum", "cryptography", "security", "PQC", "quantum", "audit", "scanner"]
+classifiers = [
+    "Topic :: Security",
+    "Topic :: Security :: Cryptography",
+    "Intended Audience :: Information Technology",
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.1.7",
+    "rich>=13.7.0",
+    "toml>=0.10.2",
+    "pyyaml>=6.0",
+    "sslyze==6.0.0",
+    "cryptography>=42.0.0,<43",
+    "tree-sitter==0.23.0",
+    "tree-sitter-python==0.23.0",
+    "tree-sitter-javascript==0.23.0",
+    "tree-sitter-java==0.23.0",
+    "tree-sitter-go==0.23.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "black", "ruff"]
+
+[project.scripts]
+seqr = "seqr.cli:main"
+
+[project.urls]
+Homepage = "https://seqrlabs.com"
+Repository = "https://github.com/LochanPS/SeQr-Labs"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["seqr*"]
+
+[tool.setuptools.package-data]
+"seqr._scanner.scanner" = ["patterns/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

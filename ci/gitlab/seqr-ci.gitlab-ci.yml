@@ -1,0 +1,43 @@
+# SeQr PQC gate — reusable GitLab CI template.
+#
+# Flags quantum-vulnerable cryptography introduced by a merge request. Runs the same
+# `seqr ci` gate as the GitHub Action, via the slim seqrlabs/seqr-ci image.
+#
+# Use it by `include`-ing this file, then the job `seqr-pqc` runs on every MR:
+#
+#   include:
+#     - remote: 'https://raw.githubusercontent.com/LochanPS/SeQr-Labs/seqr-pqc-v1.0.0/ci/gitlab/seqr-ci.gitlab-ci.yml'
+#
+# Advisory by default (exit 0 — never breaks the pipeline). Arm the gate by setting
+# SEQR_CI_ARGS in your .gitlab-ci.yml, e.g.:
+#
+#   variables:
+#     SEQR_CI_ARGS: "--fail-on-drift"      # or "--policy strict"
+#
+# Keep a seqr-baseline.json in the repo root so only NEW drift trips the gate, not
+# pre-existing crypto.
+
+seqr-pqc:
+  image: seqrlabs/seqr-ci:latest
+  stage: test
+  variables:
+    # Full clone so `git merge-base <base> HEAD` resolves for the diff.
+    GIT_DEPTH: "0"
+    # Extra `seqr ci` flags. Empty = advisory. Override to arm the gate (see header).
+    SEQR_CI_ARGS: ""
+  rules:
+    # Only on merge requests — the gate reasons about a change set, not a branch tip.
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - >
+      seqr ci .
+      --base "$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+      --comment-file seqr-pqc-report.md
+      --sarif-file seqr-pqc.sarif
+      $SEQR_CI_ARGS
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - seqr-pqc-report.md
+      - seqr-pqc.sarif

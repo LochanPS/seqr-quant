@@ -1,0 +1,30 @@
+# SeQr PQC gate as a pre-commit hook.
+#
+# Runs `seqr ci` inside the slim seqrlabs/seqr-ci image (no local Python/CLI install
+# needed — just Docker). Consumers add this repo to their .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/LochanPS/SeQr-Labs
+#       rev: seqr-pqc-v1.0.0            # pin a release tag
+#       hooks:
+#         - id: seqr-ci
+#           # advisory by default (exit 0). Arm the gate by overriding args, e.g.:
+#           # args: ["ci", ".", "--all", "--fail-on-drift"]
+#
+# pre-commit only surfaces a hook's output when it exits non-zero, so the value shows
+# once you arm the gate (--fail-on / --policy / --fail-on-drift). Keep a
+# seqr-baseline.json in the repo so only NEW drift trips it, not legacy crypto.
+#
+# The image's ENTRYPOINT is `seqr`, so `args` begin with the subcommand (`ci`). We scan
+# the whole tree once (`--all`, pass_filenames: false) rather than per staged file,
+# because the gate reasons about a change set, not isolated files.
+
+- id: seqr-ci
+  name: SeQr PQC gate
+  description: Flag quantum-vulnerable cryptography before it lands (seqr ci).
+  language: docker_image
+  entry: seqrlabs/seqr-ci:latest
+  args: ["ci", ".", "--all"]
+  pass_filenames: false
+  require_serial: true
+  files: '\.(py|js|ts|java|go)$'

@@ -1,0 +1,226 @@
+{
+  "machine": {
+    "timestamp": "2026-08-21T02:31:09Z",
+    "python": "3.11.9",
+    "implementation": "CPython",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "iterations": 20,
+    "backends_benchmarked": [
+      "pure-python"
+    ],
+    "liboqs_available": false
+  },
+  "results": [
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-512",
+      "operation": "keygen",
+      "iterations": 20,
+      "median_ms": 4.161199998634402,
+      "mean_ms": 4.231450000224868,
+      "min_ms": 3.7496000004466623,
+      "ops_per_sec": 240.31529374415413
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-512",
+      "operation": "encapsulate",
+      "iterations": 20,
+      "median_ms": 5.934149998211069,
+      "mean_ms": 6.251219999830937,
+      "min_ms": 5.518799996934831,
+      "ops_per_sec": 168.51613125746127
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-512",
+      "operation": "decapsulate",
+      "iterations": 20,
+      "median_ms": 8.866399999533314,
+      "mean_ms": 9.163425000224379,
+      "min_ms": 7.938800001284108,
+      "ops_per_sec": 112.78534693366365
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-768",
+      "operation": "keygen",
+      "iterations": 20,
+      "median_ms": 7.3502000013832,
+      "mean_ms": 8.1973949996609,
+      "min_ms": 6.5623999980743974,
+      "ops_per_sec": 136.0507196827045
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-768",
+      "operation": "encapsulate",
+      "iterations": 20,
+      "median_ms": 9.05359999887878,
+      "mean_ms": 10.76302500005113,
+      "min_ms": 8.819900001981296,
+      "ops_per_sec": 110.45330035829309
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-768",
+      "operation": "decapsulate",
+      "iterations": 20,
+      "median_ms": 11.769750002713408,
+      "mean_ms": 11.800449999645934,
+      "min_ms": 11.411999999836553,
+      "ops_per_sec": 84.96357184897379
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-1024",
+      "operation": "keygen",
+      "iterations": 20,
+      "median_ms": 9.838800000579795,
+      "mean_ms": 9.942019999652985,
+      "min_ms": 9.493400000792462,
+      "ops_per_sec": 101.63841118236681
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-1024",
+      "operation": "encapsulate",
+      "iterations": 20,
+      "median_ms": 13.578349997260375,
+      "mean_ms": 15.204000000449014,
+      "min_ms": 12.284399999771267,
+      "ops_per_sec": 73.64665074930048
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-KEM-1024",
+      "operation": "decapsulate",
+      "iterations": 20,
+      "median_ms": 18.226050000521354,
+      "mean_ms": 19.522619998679147,
+      "min_ms": 16.32189999509137,
+      "ops_per_sec": 54.86652346347097
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-44",
+      "operation": "keygen",
+      "iterations": 20,
+      "median_ms": 14.735900003870483,
+      "mean_ms": 15.012964999914402,
+      "min_ms": 12.17239999823505,
+      "ops_per_sec": 67.86148112686318
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-44",
+      "operation": "sign",
+      "iterations": 20,
+      "median_ms": 65.5651500019303,
+      "mean_ms": 88.0909099993005,
+      "min_ms": 35.80549999605864,
+      "ops_per_sec": 15.25200506626705
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-44",
+      "operation": "verify",
+      "iterations": 20,
+      "median_ms": 19.611849998909747,
+      "mean_ms": 18.96108999972057,
+      "min_ms": 14.363599999342114,
+      "ops_per_sec": 50.98958028210452
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-65",
+      "operation": "keygen",
+      "iterations": 20,
+      "median_ms": 25.35839999836753,
+      "mean_ms": 25.868760000230395,
+      "min_ms": 19.897199999832083,
+      "ops_per_sec": 39.434664650150474
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-65",
+      "operation": "sign",
+      "iterations": 20,
+      "median_ms": 105.05344999910449,
+      "mean_ms": 122.30701500011492,
+      "min_ms": 48.06839999946533,
+      "ops_per_sec": 9.518963917972464
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-65",
+      "operation": "verify",
+      "iterations": 20,
+      "median_ms": 27.687950001563877,
+      "mean_ms": 27.549209999779123,
+      "min_ms": 22.976000000198837,
+      "ops_per_sec": 36.11679448798188
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-87",
+      "operation": "keygen",
+      "iterations": 20,
+      "median_ms": 34.71260000151233,
+      "mean_ms": 39.23193000082392,
+      "min_ms": 30.788700001721736,
+      "ops_per_sec": 28.807983267068238
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-87",
+      "operation": "sign",
+      "iterations": 20,
+      "median_ms": 145.33715000288794,
+      "mean_ms": 194.71590499997546,
+      "min_ms": 70.3771999978926,
+      "ops_per_sec": 6.880553251389128
+    },
+    {
+      "backend": "pure-python",
+      "algorithm": "ML-DSA-87",
+      "operation": "verify",
+      "iterations": 20,
+      "median_ms": 46.093649998510955,
+      "mean_ms": 48.034155000641476,
+      "min_ms": 40.430900000501424,
+      "ops_per_sec": 21.69496232197504
+    },
+    {
+      "backend": "rsa-2048 (classical)",
+      "algorithm": "RSA-2048",
+      "operation": "keygen",
+      "iterations": 4,
+      "median_ms": 75.12384999790811,
+      "mean_ms": 90.0183499979903,
+      "min_ms": 40.774299995973706,
+      "ops_per_sec": 13.311351854675259
+    },
+    {
+      "backend": "rsa-2048 (classical)",
+      "algorithm": "RSA-2048",
+      "operation": "sign",
+      "iterations": 20,
+      "median_ms": 1.572050001414027,
+      "mean_ms": 1.5809800013812492,
+      "min_ms": 1.171000003523659,
+      "ops_per_sec": 636.1120823768457
+    },
+    {
+      "backend": "rsa-2048 (classical)",
+      "algorithm": "RSA-2048",
+      "operation": "verify",
+      "iterations": 20,
+      "median_ms": 0.0668499997118488,
+      "mean_ms": 0.0727099981304491,
+      "min_ms": 0.06589999975403771,
+      "ops_per_sec": 14958.863190881293
+    }
+  ]
+}

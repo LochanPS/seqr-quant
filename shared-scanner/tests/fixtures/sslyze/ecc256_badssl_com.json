@@ -1,0 +1,18 @@
+{
+  "domain": "ecc256.badssl.com",
+  "captured": "2026-06-13",
+  "notes": "ECDSA-P256 cert, ECDHE key exchange (secp256r1 curve), TLS 1.2 max. hndl_risk=True because ECDHE is quantum-vulnerable (Shor breaks ECDLP).",
+  "expected": {
+    "reachable": true,
+    "cert_algorithm": "ECDSA-P256",
+    "cert_key_size": 256,
+    "cert_expired": false,
+    "key_exchange_algorithm": "ECDHE",
+    "tls_version": "TLS_1_2",
+    "hybrid_status": "none",
+    "pqc_hybrid_offered": false,
+    "hndl_risk": true,
+    "final_algorithm_risk": 7,
+    "quantum_status": "vulnerable"
+  }
+}
