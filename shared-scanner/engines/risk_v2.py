@@ -291,6 +291,61 @@ def _rel(file_path: str, root: str | Path | None) -> PurePosixPath:
     return PurePosixPath(p.as_posix())
 
 
+def _score(*, algorithm: str, algo_risk: int, status: str, role: str, exposure: str,
+           sensitivity: str, shelf: str, reality: str, dependents: int, shared: bool,
+           shared_label: str, controls: list[str], low_confidence: bool,
+           low_confidence_reason: str, exposure_reason: str | None = None
+           ) -> tuple[float, list[Factor], bool]:
+    """Shared scoring core for code and infrastructure findings. Returns (score, factors, hndl)."""
+    safe = status in {"safe", "hybrid"}
+    base = 0.0 if safe else float(algo_risk * 10)
+    factors = [Factor("algorithm", base, f"{algorithm} — algorithm risk {algo_risk}/10"
+                      + (" (post-quantum safe)" if status == "safe" else "")
+                      + (" (hybrid post-quantum)" if status == "hybrid" else ""))]
+
+    factors.append(Factor("role", ROLE_WEIGHT.get(role, 0.8), ROLE_REASON.get(role, role)))
+    factors.append(Factor("exposure", EXPOSURE_WEIGHT.get(exposure, 0.75),
+                          exposure_reason or EXPOSURE_REASON.get(exposure, exposure)))
+
+    s = SENSITIVITY_SCORE.get(sensitivity, 5)
+    m = SHELF_LIFE_MULT.get(shelf, 1.0)
+    data_factor = round(0.55 + 0.45 * (s / 10) * (min(m, 1.5) / 1.5), 3)
+    factors.append(Factor("data", data_factor, f"{sensitivity} data, {shelf} shelf life"))
+
+    # Only when confidentiality use is visible — a bare keygen may just sign.
+    hndl = (role in {"key_exchange", "encryption"} and exposure in {"internet", "at_rest"}
+            and shelf in {"long", "permanent"} and not safe)
+    if hndl:
+        factors.append(Factor("hndl", HNDL_BOOST,
+                              "estimated harvest-now-decrypt-later exposure: long-lived data on a reachable channel"))
+
+    if reality != "production":
+        factors.append(Factor("code_reality", CODE_REALITY_WEIGHT.get(reality, 1.0),
+                              CODE_REALITY_REASON.get(reality, reality)))
+
+    blast = 1.0
+    if shared:
+        blast *= SHARED_BOOST
+    if dependents > 1:
+        blast *= 1 + 0.15 * math.log2(dependents)
+    blast = min(round(blast, 3), 1.5)
+    if blast > 1.0:
+        why = [w for w, ok in ((shared_label, shared), (f"{dependents} dependents", dependents > 1)) if ok]
+        factors.append(Factor("blast_radius", blast, "wide blast radius — " + ", ".join(why)))
+
+    if controls:
+        c = max(CONTROL_FLOOR, CONTROL_FACTOR ** len(controls))
+        factors.append(Factor("controls", round(c, 3), "compensating controls: " + ", ".join(controls)))
+
+    if low_confidence:
+        factors.append(Factor("confidence", LOW_CONFIDENCE_FACTOR, low_confidence_reason))
+
+    score = base
+    for f in factors[1:]:
+        score *= f.multiplier
+    return round(min(100.0, score), 1), factors, hndl
+
+
 def assess_finding(finding: Any, root: str | Path | None = None,
                    context: Optional[RiskContext] = None) -> RiskAssessment:
     rel = _rel(getattr(finding, "file_path", ""), root)
@@ -314,51 +369,13 @@ def assess_finding(finding: Any, root: str | Path | None = None,
 
     algo_risk = int(getattr(finding, "algorithm_risk", 0) or 0)
     status = (getattr(finding, "quantum_status", "vulnerable") or "vulnerable").lower()
-    base = 0.0 if status == "safe" else float(algo_risk * 10)
-    factors = [Factor("algorithm", base,
-                      f"{getattr(finding, 'algorithm', '?')} — algorithm risk {algo_risk}/10"
-                      + (" (post-quantum safe)" if status == "safe" else ""))]
-
-    factors.append(Factor("role", ROLE_WEIGHT.get(role, 0.8), ROLE_REASON.get(role, role)))
-    factors.append(Factor("exposure", EXPOSURE_WEIGHT.get(exposure, 0.75), EXPOSURE_REASON.get(exposure, exposure)))
-
-    s = SENSITIVITY_SCORE.get(sensitivity, 5)
-    m = SHELF_LIFE_MULT.get(shelf, 1.0)
-    data_factor = round(0.55 + 0.45 * (s / 10) * (min(m, 1.5) / 1.5), 3)
-    factors.append(Factor("data", data_factor, f"{sensitivity} data, {shelf} shelf life"))
-
-    # Only when confidentiality use is visible in the code — a bare keygen may just sign.
-    hndl = (role in {"key_exchange", "encryption"} and exposure in {"internet", "at_rest"}
-            and shelf in {"long", "permanent"} and status != "safe")
-    if hndl:
-        factors.append(Factor("hndl", HNDL_BOOST,
-                              "estimated harvest-now-decrypt-later exposure: long-lived data on a reachable channel"))
-
-    if reality != "production":
-        factors.append(Factor("code_reality", CODE_REALITY_WEIGHT.get(reality, 1.0),
-                              CODE_REALITY_REASON.get(reality, reality)))
-
-    blast = 1.0
-    if _is_shared(rel):
-        blast *= SHARED_BOOST
-    if dependents > 1:
-        blast *= 1 + 0.15 * math.log2(dependents)
-    blast = min(round(blast, 3), 1.5)
-    if blast > 1.0:
-        why = [w for w, ok in (("shared module", _is_shared(rel)), (f"{dependents} dependents", dependents > 1)) if ok]
-        factors.append(Factor("blast_radius", blast, "wide blast radius — " + ", ".join(why)))
-
-    if controls:
-        c = max(CONTROL_FLOOR, CONTROL_FACTOR ** len(controls))
-        factors.append(Factor("controls", round(c, 3), "compensating controls: " + ", ".join(controls)))
-
-    if (getattr(finding, "confidence", "high") or "high").lower() == "low":
-        factors.append(Factor("confidence", LOW_CONFIDENCE_FACTOR, "low-confidence pattern match"))
-
-    score = base
-    for f in factors[1:]:
-        score *= f.multiplier
-    score = round(min(100.0, score), 1)
+    shared = _is_shared(rel)
+    score, factors, hndl = _score(
+        algorithm=getattr(finding, "algorithm", "?"), algo_risk=algo_risk, status=status,
+        role=role, exposure=exposure, sensitivity=sensitivity, shelf=shelf, reality=reality,
+        dependents=dependents, shared=shared, shared_label="shared module", controls=controls,
+        low_confidence=(getattr(finding, "confidence", "high") or "high").lower() == "low",
+        low_confidence_reason="low-confidence pattern match")
 
     return RiskAssessment(
         file_path=getattr(finding, "file_path", ""), rel_path=rel.as_posix(),
@@ -399,3 +416,114 @@ def summarize(assessments: list[RiskAssessment]) -> dict:
         "inferred_exposure": sum(1 for a in assessments if "exposure" in a.inferred),
         "hndl_disclaimer": HNDL_DISCLAIMER,
     }
+
+
+# ── infrastructure components (spine: asset + slot + winning observation) ────
+
+_SLOT_ROLE = {
+    "tls:kex": "key_exchange", "ssh:kex": "key_exchange", "ike:kex": "key_exchange",
+    "tls:cert": "signature", "ssh:hostkey": "signature", "code:signing": "signature",
+}
+# Default exposure by asset type. A default, not a fact (a TLS endpoint can be internal), so it is
+# always reported as inferred.
+_ASSET_EXPOSURE = {
+    # public front doors
+    "domain": "internet", "tls_endpoint": "internet", "load_balancer": "internet",
+    "origin": "internet", "grpc": "internet",
+    "smtp": "internet", "imap": "internet", "pop3": "internet",
+    # internal services: database / queue / admin channels
+    "postgres": "internal", "mysql": "internal", "mongodb": "internal", "amqp": "internal",
+    "ssh": "internal", "host": "internal", "agent": "internal",
+    # key material at rest
+    "hsm": "at_rest", "kms": "at_rest", "database": "at_rest",
+}
+_ORIGIN_BYPASS_REASON = ("origin reachable directly while fronted by a CDN edge — "
+                         "traffic can route around edge protection")
+_SENSITIVITY_SHELF = {"highly_confidential": "long", "confidential": "long",
+                      "internal": "medium", "public": "short"}
+
+
+def infra_algorithm_risk(family: str, algorithm: str, key_size: int | None, status: str) -> int:
+    """0-10 quantum risk for an observed infrastructure algorithm (observations carry no score)."""
+    if (status or "").lower() in {"safe", "hybrid"}:
+        return 0
+    fam = (family or "").upper()
+    alg = (algorithm or "").upper()
+    if fam == "RSA" or alg.startswith("RSA") or alg == "SSH-RSA":
+        return 10 if (key_size and key_size < 2048) else 8
+    if fam == "DSA" or "DSA" == alg:
+        return 9
+    if fam in {"ECC", "ECDSA", "ECDH", "DH", "EDDSA"} or any(k in alg for k in ("ECDHE", "ECDSA", "X25519", "P-256", "ED25519", "DH")):
+        return 8
+    if fam in {"SHA", "MD5"}:
+        return 3
+    return 7
+
+
+@dataclass
+class InfraComponent:
+    asset_id: str
+    asset_identifier: str
+    asset_type: str
+    slot_key: str
+    algorithm: str
+    algorithm_family: str
+    quantum_status: str
+    key_size: int | None = None
+    data_sensitivity: str = "internal"
+    dependents: int = 1
+    fronted_by_edge: bool = False      # an origin_of edge points at this asset
+    controls: list[str] = field(default_factory=list)
+    source: str = ""
+    confidence: str = "high"
+
+
+def _name_shelf(identifier: str) -> str | None:
+    tokens = set()
+    for part in identifier.lower().replace("-", ".").replace("_", ".").split("."):
+        tokens.add(part)
+    if tokens & _HIGH_PERSISTENCE:
+        return "long"
+    if tokens & _LOW_PERSISTENCE:
+        return "short"
+    return None
+
+
+def assess_component(c: InfraComponent) -> RiskAssessment:
+    """Context-aware risk for one infrastructure slot, using asset type and graph context."""
+    inferred: list[str] = []
+    role = _SLOT_ROLE.get(c.slot_key)
+    if role is None:
+        role = "keygen" if c.asset_type == "hsm" else "unknown"
+        inferred.append("role")
+    exposure = _ASSET_EXPOSURE.get(c.asset_type, "unknown")
+    inferred.append("exposure")
+    sensitivity = c.data_sensitivity or "internal"
+    shelf = _name_shelf(c.asset_identifier) or _SENSITIVITY_SHELF.get(sensitivity, "medium")
+    inferred.append("shelf_life")
+    status = (c.quantum_status or "vulnerable").lower()
+    algo_risk = infra_algorithm_risk(c.algorithm_family, c.algorithm, c.key_size, status)
+    bypass = c.asset_type == "origin" and c.fronted_by_edge
+
+    score, factors, hndl = _score(
+        algorithm=c.algorithm, algo_risk=algo_risk, status=status, role=role, exposure=exposure,
+        sensitivity=sensitivity, shelf=shelf, reality="production",
+        dependents=max(1, c.dependents), shared=c.asset_type in {"load_balancer", "hsm"},
+        shared_label="shared infrastructure", controls=list(c.controls),
+        low_confidence=(c.confidence or "high").lower() == "low",
+        low_confidence_reason="low-confidence observation",
+        exposure_reason=_ORIGIN_BYPASS_REASON if bypass else None)
+
+    return RiskAssessment(
+        file_path=c.asset_identifier, rel_path=f"{c.asset_identifier} [{c.slot_key}]", line_number=0,
+        algorithm=c.algorithm, algorithm_family=c.algorithm_family, score=score, tier=tier_for(score),
+        role=role, exposure=exposure, data_sensitivity=sensitivity, shelf_life=shelf,
+        code_reality="production", dependents=max(1, c.dependents), controls=list(c.controls),
+        hndl=hndl, factors=factors, inferred=inferred,
+    )
+
+
+def assess_components(components: Iterable[InfraComponent]) -> list[RiskAssessment]:
+    """Assess and rank infrastructure slots, highest risk first."""
+    return sorted((assess_component(c) for c in components),
+                  key=lambda a: (-a.score, a.rel_path))

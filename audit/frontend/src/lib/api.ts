@@ -158,6 +158,7 @@ export const api = {
     assetEdges: (id: string) => request<GraphEdge[]>(`/graph/assets/${id}/edges`),
     assetState: (id: string) => request<ComponentStateRow[]>(`/graph/assets/${id}/state`),
     componentStates: () => request<ComponentStateRow[]>("/graph/component-states"),
+    contextRisk: () => request<ContextRiskResult>("/graph/risk"),
     evaluations: () => request<EvaluationRow[]>("/graph/evaluations"),
     currentViolations: () => request<ViolationRow[]>("/graph/violations/current"),
     attestations: () => request<AttestationRow[]>("/graph/attestations"),
@@ -458,4 +459,36 @@ export interface RemediationResult {
   };
   opt_gap_to_optimum?: number;
   notes: string[];
+}
+
+// ── Context-aware risk (risk engine v2) over infrastructure slots ────────────
+
+export interface ContextRiskComponent {
+  asset_id: string | null;
+  asset_type: string | null;
+  slot_key: string | null;
+  file_path: string;
+  rel_path: string;
+  algorithm: string;
+  score: number;
+  tier: string;
+  role: string;
+  exposure: string;
+  data_sensitivity: string;
+  shelf_life: string;
+  dependents: number;
+  hndl: boolean;
+  inferred: string[];
+  reasons: string[];
+  source: string | null;
+}
+
+export interface ContextRiskResult {
+  summary: {
+    findings: number;
+    tiers: Record<string, number>;
+    hndl: number;
+    hndl_disclaimer: string;
+  };
+  components: ContextRiskComponent[];
 }

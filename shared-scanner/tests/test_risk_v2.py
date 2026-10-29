@@ -179,3 +179,79 @@ def test_acme_sample_is_no_longer_flat():
                               "data_sensitivity": "highly_confidential", "shelf_life": "long"}])
     top = assess_findings(findings, SAMPLE, ctx)[0]
     assert top.rel_path == "payments/legacy_dh.py" and top.hndl and top.tier == "IMMEDIATE"
+
+
+# ── infrastructure components ──
+
+from engines.risk_v2 import InfraComponent, assess_component, assess_components, infra_algorithm_risk  # noqa: E402
+
+
+def C(**kw):
+    base = dict(asset_id="a1", asset_identifier="api.bank.example", asset_type="domain",
+                slot_key="tls:kex", algorithm="X25519", algorithm_family="ECC",
+                quantum_status="vulnerable", data_sensitivity="confidential")
+    base.update(kw)
+    return InfraComponent(**base)
+
+
+def test_hybrid_kex_scores_zero():
+    a = assess_component(C(algorithm="X25519MLKEM768", algorithm_family="ML-KEM", quantum_status="hybrid"))
+    assert a.score == 0 and a.tier == "MONITOR"
+
+
+def test_public_kex_on_long_lived_data_is_hndl():
+    a = assess_component(C(asset_identifier="kyc.bank.example"))
+    assert a.role == "key_exchange" and a.exposure == "internet"
+    assert a.hndl is True and a.tier in {"IMMEDIATE", "URGENT"}
+
+
+def test_certificate_is_signature_and_not_hndl():
+    a = assess_component(C(slot_key="tls:cert", algorithm="RSA-2048", algorithm_family="RSA", key_size=2048))
+    assert a.role == "signature" and a.hndl is False
+    kex = assess_component(C())
+    assert a.score < kex.score
+
+
+def test_internal_host_ranks_below_public_endpoint():
+    public = assess_component(C())
+    internal = assess_component(C(asset_type="host", asset_identifier="app01.internal"))
+    assert internal.exposure == "internal" and internal.score < public.score
+
+
+def test_origin_behind_edge_gets_bypass_reason():
+    a = assess_component(C(asset_type="origin", asset_identifier="origin-api.bank.example", fronted_by_edge=True))
+    assert a.exposure == "internet"
+    assert any("route around edge" in f.reason for f in a.factors)
+
+
+def test_dependents_raise_blast_radius():
+    # unsaturated case (cert on internal data) so the 100 cap can't mask the effect
+    kw = dict(asset_type="load_balancer", slot_key="tls:cert", data_sensitivity="internal",
+              algorithm="RSA-2048", algorithm_family="RSA", key_size=2048)
+    one = assess_component(C(dependents=1, **kw))
+    many = assess_component(C(dependents=8, **kw))
+    assert one.score < 100 and many.score > one.score
+
+
+def test_infra_algorithm_risk_table():
+    assert infra_algorithm_risk("RSA", "RSA-1024", 1024, "vulnerable") == 10
+    assert infra_algorithm_risk("RSA", "RSA-2048", 2048, "vulnerable") == 8
+    assert infra_algorithm_risk("ECC", "X25519", None, "vulnerable") == 8
+    assert infra_algorithm_risk("ML-KEM", "X25519MLKEM768", None, "hybrid") == 0
+
+
+def test_components_ranked_descending():
+    r = assess_components([C(asset_type="host"), C(asset_identifier="kyc.bank.example"),
+                           C(quantum_status="hybrid", algorithm="X25519MLKEM768")])
+    assert [a.score for a in r] == sorted((a.score for a in r), reverse=True)
+    assert r[-1].score == 0
+
+
+@pytest.mark.parametrize("atype,exposure", [
+    ("tls_endpoint", "internet"), ("domain", "internet"), ("smtp", "internet"),
+    ("postgres", "internal"), ("ssh", "internal"), ("hsm", "at_rest"), ("weird_thing", "unknown"),
+])
+def test_every_asset_type_maps_and_is_marked_inferred(atype, exposure):
+    a = assess_component(C(asset_type=atype))
+    assert a.exposure == exposure
+    assert "exposure" in a.inferred

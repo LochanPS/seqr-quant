@@ -8,6 +8,7 @@ import {
   Download, FileText, Terminal,
 } from "lucide-react";
 import { api, type DryRun, type VerifyReport } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
 import { downloadWithAuth } from "@/lib/download";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -264,6 +265,8 @@ export default function PosturePage() {
         </CardContent>
       </Card>
 
+      <ContextRiskCard />
+
       {/* Violations + state */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card id="sec-violations">
@@ -386,5 +389,74 @@ export default function PosturePage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+const TIER_BADGE: Record<string, "vulnerable" | "urgent" | "planned" | "muted"> = {
+  IMMEDIATE: "vulnerable",
+  URGENT: "urgent",
+  PLANNED: "planned",
+  MONITOR: "muted",
+};
+
+function ContextRiskCard() {
+  const risk = useQuery({ queryKey: ["context-risk"], queryFn: api.graph.contextRisk });
+  const d = risk.data;
+  return (
+    <Card id="sec-context-risk">
+      <CardHeader>
+        <CardTitle className="text-base">Risk-ranked crypto (context-aware)</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Every current slot scored 0–100 from what it protects and where it is reachable — key
+          exchange vs signature, internet vs internal, data shelf life, and how many assets depend on it.
+        </p>
+      </CardHeader>
+      <CardContent>
+        {risk.isLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : risk.isError || !d ? (
+          <p className="text-sm text-vulnerable">Failed to load.</p>
+        ) : d.components.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No crypto observed yet.</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2 text-xs">
+              {(["IMMEDIATE", "URGENT", "PLANNED", "MONITOR"] as const).map((t) => (
+                <Badge key={t} variant={TIER_BADGE[t]}>
+                  {t} {d.summary.tiers[t] ?? 0}
+                </Badge>
+              ))}
+              {d.summary.hndl ? <Badge variant="vulnerable">HNDL {d.summary.hndl}</Badge> : null}
+            </div>
+            <div className="divide-y text-sm">
+              {d.components.map((c) => (
+                <div key={c.rel_path} className="grid grid-cols-[3rem_6.5rem_1fr] gap-3 py-2">
+                  <span className="text-right font-semibold tabular-nums">{c.score.toFixed(0)}</span>
+                  <span>
+                    <Badge variant={TIER_BADGE[c.tier] ?? "muted"}>{c.tier}</Badge>
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-xs">
+                      {c.file_path} <span className="text-muted-foreground">[{c.slot_key}]</span>{" "}
+                      <span className="text-muted-foreground">{c.algorithm}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {c.role.replace("_", " ")} · {c.exposure}
+                      {c.inferred.includes("exposure") ? " (from asset type)" : ""}
+                      {c.dependents > 1 ? ` · ${c.dependents - 1} linked asset${c.dependents > 2 ? "s" : ""}` : ""}
+                      {c.hndl ? <span className="ml-1 text-vulnerable">HNDL</span> : null}
+                    </p>
+                    <p className="text-xs text-muted-foreground/80">{c.reasons.join("; ")}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {d.summary.hndl ? (
+              <p className="text-[0.65rem] text-muted-foreground">{d.summary.hndl_disclaimer}</p>
+            ) : null}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -367,3 +367,63 @@ async def list_events(
         q = q.where(Event.type == type)
     q = q.order_by(Event.at.desc()).limit(limit).offset(offset)
     return (await db.execute(q)).scalars().all()
+
+
+# ── context-aware risk (risk engine v2) over the org's current component state ──
+
+_HNDL_DISCLAIMER = (
+    "HNDL exposure scores are predictive cryptographic risk metrics based on data-type "
+    "endurance, not indicators of active data interception or confirmed network breaches."
+)
+
+
+@router.get("/risk")
+async def context_risk(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+):
+    """Rank every current crypto slot by context-aware risk (exposure, role, data, blast radius).
+
+    Org-scoped: assets, states, observations and edges are all filtered by the caller's org.
+    """
+    from engines.risk_v2 import InfraComponent, assess_component, summarize
+
+    org = current_user.org_id
+    assets = {a.id: a for a in (await db.execute(select(Asset).where(Asset.org_id == org))).scalars()}
+    edges = (await db.execute(
+        select(AssetEdge).where(AssetEdge.org_id == org, AssetEdge.valid_to.is_(None))
+    )).scalars().all()
+    degree: dict[uuid.UUID, int] = {}
+    fronted: set[uuid.UUID] = set()
+    for e in edges:
+        degree[e.src_asset_id] = degree.get(e.src_asset_id, 0) + 1
+        degree[e.dst_asset_id] = degree.get(e.dst_asset_id, 0) + 1
+        if e.relation == "origin_of":
+            fronted.add(e.dst_asset_id)
+
+    states = (await db.execute(select(ComponentState).where(ComponentState.org_id == org))).scalars().all()
+    comps = []
+    for st in states:
+        obs = await db.get(CryptoComponent, st.winning_observation_id)
+        asset = assets.get(st.asset_id)
+        if not obs or not asset or obs.org_id != org:
+            continue
+        comps.append(InfraComponent(
+            asset_id=str(asset.id), asset_identifier=asset.identifier, asset_type=(asset.type or "").lower(),
+            slot_key=st.slot_key, algorithm=obs.algorithm, algorithm_family=obs.algorithm_family,
+            quantum_status=obs.quantum_status, key_size=obs.key_size,
+            data_sensitivity=asset.data_sensitivity or "internal",
+            dependents=1 + degree.get(asset.id, 0), fronted_by_edge=asset.id in fronted,
+            source=obs.source or "", confidence=obs.confidence or "high",
+        ))
+    pairs = sorted(((assess_component(c), c) for c in comps), key=lambda p: (-p[0].score, p[0].rel_path))
+    summary = summarize([a for a, _ in pairs])
+    summary["hndl_disclaimer"] = _HNDL_DISCLAIMER
+    out = []
+    for a, c in pairs:
+        d = a.to_dict()
+        d.update(asset_id=c.asset_id, asset_type=c.asset_type, slot_key=c.slot_key,
+                 source=c.source, reasons=a.reasons(2))
+        out.append(d)
+    await _audit(db, current_user, "context_risk", extra={"count": len(out)})
+    return {"summary": summary, "components": out}
