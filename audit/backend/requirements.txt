@@ -26,6 +26,10 @@ fakeredis[lua]==2.36.1
 weasyprint==62.3
 jinja2==3.1.4
 reportlab==4.2.2
-cryptography>=42.0.0
+cryptography>=43,<47  # bounded by sslyze 6.3.1 (shared-scanner); QpiAI SDKs are compatible in this range
+# QpiAI Opt (HUBO remediation planner) + QpiAI QCloud (QAOA alternatives). The remediation
+# router runs these in-process, so the backend image needs them (not just the dev venv).
+qpiai-opt[quantum]==0.0.9
+qpiai-quantum==0.3.0
 # seqr-scanner is installed separately from ../../shared-scanner (see Dockerfile.render).
 # Local dev:  pip install -e ../../shared-scanner
