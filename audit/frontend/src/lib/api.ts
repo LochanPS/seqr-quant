@@ -278,6 +278,8 @@ export const api = {
       request<RemediationResult>("/remediation/plan", { method: "POST", body: JSON.stringify(body) }),
     planInfra: (body: Omit<RemediationRequest, "report">) =>
       request<RemediationResult>("/remediation/plan-infra", { method: "POST", body: JSON.stringify(body) }),
+    qpiaiDevices: () =>
+      request<{ devices: QCloudDeviceStatus[]; error: string | null }>("/remediation/qpiai/devices"),
   },
   migration: {
     pipeline: () => request<PipelineStatus>("/migration/pipeline"),
@@ -588,6 +590,24 @@ export interface RemediationRequest {
   use_opt: boolean;
   use_qaoa: boolean;
   curve?: number[];
+  qaoa_device?: QCloudDevice | null;
+  qaoa_warm_start?: boolean;
+  opt_platform?: boolean;
+}
+
+export type QCloudDevice =
+  | "QpiAI-QSV-Simulator"
+  | "QpiAI-QDM-Simulator"
+  | "QpiAI-QTN-Simulator"
+  | "QpiAI-QSV-Lite"
+  | "QpiAI-QDM-Lite"
+  | "QpiAI-Indus-1";
+
+export interface QCloudDeviceStatus {
+  device: string;
+  status: string;
+  usage_rate: number | null;
+  method: string | null;
 }
 
 export interface RemediationPlan {
@@ -629,7 +649,12 @@ export interface RemediationResult {
     slot_key?: string | null;
     asset_type?: string | null;
   }[];
-  plans: { greedy?: RemediationPlan; exhaustive?: RemediationPlan | null; opt?: RemediationPlan };
+  plans: {
+    greedy?: RemediationPlan;
+    exhaustive?: RemediationPlan | null;
+    opt?: RemediationPlan;
+    opt_platform?: RemediationPlan;
+  };
   errors: Record<string, string>;
   curve: { budget: number; removed_pct: number; chosen: string[]; method: string }[];
   qaoa?: {
@@ -645,6 +670,18 @@ export interface RemediationResult {
     reduced_optimum: number;
     sampled_optimum: boolean;
     contains_best_known: boolean;
+    backend: string;
+    warm_start: boolean;
+    p_optimal_warm_state?: number;
+    cloud?: {
+      device: string;
+      experiment: string;
+      shots: number;
+      status: "ok" | "failed";
+      job_ids: string[];
+      error?: string;
+      seconds: number;
+    };
   };
   opt_gap_to_optimum?: number;
   notes: string[];

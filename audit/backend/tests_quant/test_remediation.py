@@ -155,3 +155,27 @@ def test_infra_actions_overlap_into_higher_order_terms():
     ex = rem.plan_exhaustive(findings, list(acts.values()), 10)
     gr = rem.plan_greedy(findings, list(acts.values()), 10)
     assert ex.feasible and ex.residual <= gr.residual + 1e-9
+
+
+# ── QpiAI cloud helpers ──────────────────────────────────────────────────────
+
+def test_pretrained_optimizer_never_evaluates():
+    calls = []
+    x, v, info = rem._pretrained(lambda p: calls.append(p), [0.1, 0.2], 50)
+    assert list(x) == [0.1, 0.2] and calls == [] and info["nfev"] == 0
+
+
+def test_warm_assignment_encodes_plan_and_exact_slack():
+    acts = [Action("a", "", 6, {}), Action("b", "", 4, {}), Action("c", "", 9, {})]
+    names = [rem._var(x.id) for x in acts] + [f"s__{i}" for i in range(len(rem.slack_coefficients(20)))] + ["aux"]
+    w = rem._warm_assignment(names, acts, {"a", "c"}, 20)
+    assert (w[rem._var("a")], w[rem._var("b")], w[rem._var("c")]) == (1.0, 0.0, 1.0)
+    coeffs = rem.slack_coefficients(20)
+    assert sum(c for i, c in enumerate(coeffs) if w[f"s__{i}"] == 1.0) == 20 - 15   # budget equation exact
+    assert w["aux"] == 0.5 and set(w) == set(names)
+
+
+def test_qcloud_error_keeps_qpiai_message_only():
+    e = Exception("Error : Bad Request (400).\nServer response: {'error': 'an active subscription is required'}\n\nCommon causes:\n 1. x")
+    assert rem._qcloud_error(e) == "{'error': 'an active subscription is required'}"
+    assert rem._qcloud_error(RuntimeError("quota exceeded")) == "quota exceeded"

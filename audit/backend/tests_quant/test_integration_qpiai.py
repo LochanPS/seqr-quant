@@ -61,3 +61,22 @@ def test_qaoa_matches_classical_optimum():
     out = run_experiment()
     assert out["quantum"]["qubits"] == 6
     assert out["quantum"]["matches_classical_optimum"] is True
+
+
+def test_qaoa_cloud_device_runs_or_reports_refusal():
+    """One QCloud job, or QpiAI's refusal (no subscription) with local samples still served."""
+    from app.migration.remediation import (build_actions, contested_actions, load_findings,
+                                           plan_alternatives_qaoa, plan_exhaustive)
+    acme = Path(__file__).resolve().parents[3] / "examples" / "acme-risk-v2.json"
+    fs = load_findings(acme)
+    acts = build_actions(fs)
+    e = plan_exhaustive(fs, acts, 40)
+    q = plan_alternatives_qaoa(fs, acts, 40, contested_actions([e], fs, acts), reps=1,
+                               best_known=e.residual, warm_start_plan=e.chosen,
+                               device="QpiAI-QSV-Simulator")
+    assert q["cloud"]["status"] in {"ok", "failed"}
+    if q["cloud"]["status"] == "ok":
+        assert len(q["cloud"]["job_ids"]) == 1 and q["backend"] == "QpiAI-QSV-Simulator"
+    else:
+        assert q["cloud"]["error"] and q["backend"] == "QpiAI-QSV-Local"
+    assert q["alternatives"] and 0 <= q["p_optimal_warm_state"] <= 1

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
@@ -38,6 +38,10 @@ HNDL_DISCLAIMER = (
 )
 
 
+QCloudDevice = Literal["QpiAI-QSV-Simulator", "QpiAI-QDM-Simulator", "QpiAI-QTN-Simulator",
+                       "QpiAI-QSV-Lite", "QpiAI-QDM-Lite", "QpiAI-Indus-1"]
+
+
 class PlanRequest(BaseModel):
     report: Optional[dict[str, Any]] = Field(
         default=None, description="risk-v2 report; omit to use the bundled ACME sample")
@@ -45,6 +49,10 @@ class PlanRequest(BaseModel):
     use_opt: bool = True
     use_qaoa: bool = False
     curve: list[float] = Field(default_factory=lambda: [20, 40, 80], max_length=8)
+    qaoa_device: Optional[QCloudDevice] = Field(
+        default=None, description="sample the trained QAOA circuit on this QpiAI QCloud backend (one job)")
+    qaoa_warm_start: bool = Field(default=False, description="warm-start QAOA from the best classical plan")
+    opt_platform: bool = Field(default=False, description="also solve on QpiAI's hosted Opt platform (one job)")
 
 
 def _plan_out(p: rem.Plan | None) -> dict | None:
@@ -108,14 +116,23 @@ def _solve(findings: list[rem.Finding], actions: list[rem.Action], shown: list[d
         try:
             known = [p for p in (opt, exact, greedy) if p and p.feasible]
             focus = rem.contested_actions(known, findings, actions)
+            best = min(known, key=lambda p: p.residual) if known else None
             out["qaoa"] = rem.plan_alternatives_qaoa(
                 findings, actions, req.budget, focus,
-                best_known=min(p.residual for p in known) if known else None)
+                best_known=best.residual if best else None,
+                warm_start_plan=best.chosen if (req.qaoa_warm_start and best) else None,
+                device=req.qaoa_device)
             out["notes"].append(
                 f"QAOA explores {2 ** len(focus)} plans with 1024 shots, so sampling covers the space; "
                 "the alternatives menu is not evidence of quantum advantage.")
         except Exception as e:
             out["errors"]["qaoa"] = f"{type(e).__name__}: {e}"
+
+    if req.opt_platform:
+        try:
+            out["plans"]["opt_platform"] = _plan_out(rem.plan_opt(findings, actions, req.budget, mode="platform"))
+        except Exception as e:  # quota / access: QpiAI's message, local Opt result stands
+            out["errors"]["opt_platform"] = rem._qcloud_error(e)
 
     if opt and exact:
         out["opt_gap_to_optimum"] = round(opt.residual - exact.residual, 2)
@@ -150,6 +167,9 @@ class InfraPlanRequest(BaseModel):
     use_opt: bool = True
     use_qaoa: bool = False
     curve: list[float] = Field(default_factory=lambda: [8, 24, 48], max_length=8)
+    qaoa_device: Optional[QCloudDevice] = None
+    qaoa_warm_start: bool = False
+    opt_platform: bool = False
 
 
 @router.post("/plan-infra")
@@ -173,8 +193,32 @@ async def plan_infra(
     actions = rem.build_infra_actions(findings)
     shown = [c for c in comps if float(c["score"]) > 0]
     result = await run_in_threadpool(_solve, findings, actions, shown, PlanRequest(
-        budget=req.budget, use_opt=req.use_opt, use_qaoa=req.use_qaoa, curve=req.curve))
+        **req.model_dump()))
     result["notes"].insert(1, "Public WebPKI cannot issue ML-DSA certificates yet: internet-facing "
                               "certificate actions only shorten exposure; internal PKI can migrate fully.")
     result["source"] = "org-graph"
     return result
+
+
+def _qcloud_devices() -> list[dict]:
+    from qpiai_opt.quantum import QpiAIQuantumAuth
+    from qpiai_quantum.jobmanager import JobManager
+
+    _, key = rem._keys()
+    if not key:
+        raise RuntimeError("QCLOUD_API_KEY not set")
+    QpiAIQuantumAuth.login(api_key=key)
+    return [{"device": d.get("device_name"), "status": d.get("status"), "usage_rate": d.get("usage_rate"),
+             "method": d.get("method")} for d in JobManager().list_compute_resources()]
+
+
+@router.get("/qpiai/devices")
+async def qpiai_devices(current_user: Annotated[User, Depends(get_current_user)]):
+    """QpiAI QCloud backends and their status (e.g. the Indus-1 QPU in maintenance).
+
+    Account-level device catalogue only; no job history, so nothing crosses tenants.
+    """
+    try:
+        return {"devices": await run_in_threadpool(_qcloud_devices), "error": None}
+    except Exception as e:
+        return {"devices": [], "error": rem._qcloud_error(e)}

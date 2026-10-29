@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { api, type RemediationPlan, type RemediationResult } from "@/lib/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { api, type QCloudDevice, type RemediationPlan, type RemediationResult } from "@/lib/api";
 import { cn, errMsg, humanize } from "@/lib/utils";
 import { plain } from "@/lib/domain";
 import { PageHeader, Section, Segmented } from "@/components/ui/page";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Switch } from "@/components/ui/field";
+import { Field, Input, Select, Switch } from "@/components/ui/field";
 import { Notice, ReadoutSkeleton, TableSkeleton } from "@/components/ui/feedback";
 import { Chip, Stamp, StatusChip } from "@/components/ui/marks";
 import { CountUp, Readout, ReadoutStrip } from "@/components/ui/numbers";
@@ -32,12 +32,30 @@ export default function RemediationPage() {
   const [reportName, setReportName] = useState<string | null>(null);
   const [useOpt, setUseOpt] = useState(true);
   const [useQaoa, setUseQaoa] = useState(false);
+  const [qaoaDevice, setQaoaDevice] = useState<QCloudDevice | "">("");
+  const [warmStart, setWarmStart] = useState(false);
+  const [optPlatform, setOptPlatform] = useState(false);
+  const devices = useQuery({
+    queryKey: ["qpiai-devices"],
+    queryFn: api.remediation.qpiaiDevices,
+    enabled: useQaoa,
+    staleTime: 60_000,
+  });
 
   const run = useMutation({
     mutationFn: () => {
       const b = Math.max(1, budget || 1);
-      if (mode === "infra") return api.remediation.planInfra({ budget: b, use_opt: useOpt, use_qaoa: useQaoa, curve: curveFor(b) });
-      return api.remediation.plan({ report: mode === "upload" ? report : null, budget: b, use_opt: useOpt, use_qaoa: useQaoa, curve: curveFor(b) });
+      const opts = {
+        budget: b,
+        use_opt: useOpt,
+        use_qaoa: useQaoa,
+        curve: curveFor(b),
+        qaoa_device: useQaoa && qaoaDevice ? qaoaDevice : null,
+        qaoa_warm_start: useQaoa && warmStart,
+        opt_platform: optPlatform,
+      };
+      if (mode === "infra") return api.remediation.planInfra(opts);
+      return api.remediation.plan({ ...opts, report: mode === "upload" ? report : null });
     },
     onSuccess: (r) => {
       const p = best(r);
@@ -150,7 +168,27 @@ export default function RemediationPage() {
           </Field>
           <div className="max-w-md space-y-3 border-t border-rule pt-4">
             <Switch checked={useOpt} onChange={setUseOpt} label="Use QpiAI Opt" description="Solve the selection with the QpiAI Opt HUBO solver (runs on this server), then compare against greedy and exhaustive search." />
-            <Switch checked={useQaoa} onChange={setUseQaoa} label="Run QAOA alternatives" description="Sample near-optimal alternatives with QpiAI QAOA on the local QCloud simulator. Slower, about 10 to 20 seconds." />
+            <Switch checked={optPlatform} onChange={setOptPlatform} label="Also solve on QpiAI Opt platform" description="Submits one job to QpiAI's hosted HUBO solver, visible in the Opt console. Needs HUBO Solver quota on the QpiAI account." />
+            <Switch checked={useQaoa} onChange={setUseQaoa} label="Run QAOA alternatives" description="Angles are trained on the local simulator (free). Pick a QCloud device to sample the trained circuit there as a single job." />
+            {useQaoa && (
+              <div className="space-y-3 border-l border-rule pl-4">
+                <Field label="QAOA sampling device" hint={devices.data?.error ? `QpiAI device list unavailable: ${devices.data.error}` : undefined}>
+                  {({ id, describedBy }) => (
+                  <Select id={id} aria-describedby={describedBy} value={qaoaDevice} onChange={(e) => setQaoaDevice(e.target.value as QCloudDevice | "")}>
+                    <option value="">Local simulator (QpiAI-QSV-Local, no job)</option>
+                    {(devices.data?.devices ?? []).map((d) => (
+                      <option key={d.device} value={d.device} disabled={d.status !== "active"}>
+                        {d.device}
+                        {d.device === "QpiAI-Indus-1" ? " (QPU)" : ""}
+                        {d.status !== "active" ? ` (${d.status})` : ""}
+                      </option>
+                    ))}
+                  </Select>
+                  )}
+                </Field>
+                <Switch checked={warmStart} onChange={setWarmStart} label="Warm-start from the classical plan" description="Tilts QAOA's starting state toward the best plan found classically. The result reports how much QAOA adds beyond that starting state." />
+              </div>
+            )}
           </div>
         </div>
 
@@ -183,7 +221,7 @@ function curveFor(b: number) {
 function Results({ r }: { r: RemediationResult }) {
   const p = best(r);
   const byId = Object.fromEntries(r.actions.map((a) => [a.id, a]));
-  const plans = (["greedy", "exhaustive", "opt"] as const).map((k) => [k, r.plans[k]] as const).filter(([, v]) => !!v);
+  const plans = (["greedy", "exhaustive", "opt", "opt_platform"] as const).map((k) => [k, r.plans[k]] as const).filter(([, v]) => !!v);
 
   return (
     <div className="space-y-14">
@@ -308,10 +346,15 @@ function Results({ r }: { r: RemediationResult }) {
 
       {r.qaoa && (
         <Section index="04" title="QAOA alternatives" description={`${r.qaoa.qubits} qubits · ${r.qaoa.reps} reps · CVaR alpha ${r.qaoa.cvar_alpha} · ${r.qaoa.seconds.toFixed(1)} s`}>
+          <QCloudRun q={r.qaoa} />
           <div className="mb-5 flex flex-wrap gap-2">
             <Chip tone={r.qaoa.contains_best_known ? "safe" : "urgent"}>{r.qaoa.contains_best_known ? "contains best known" : "best known outside reduced set"}</Chip>
             <Chip tone={r.qaoa.sampled_optimum ? "safe" : "urgent"}>{r.qaoa.sampled_optimum ? "optimum sampled" : "optimum not sampled"}</Chip>
-            {r.qaoa.amplification != null && <Chip>amplification {r.qaoa.amplification.toFixed(1)}x</Chip>}
+            {r.qaoa.amplification != null && (
+              <Chip>
+                {r.qaoa.warm_start ? "vs uniform, incl. warm start" : "amplification"} {r.qaoa.amplification.toFixed(1)}x
+              </Chip>
+            )}
             <Chip>p optimal {(r.qaoa.p_optimal * 100).toFixed(1)}%</Chip>
             <Chip>p uniform {(r.qaoa.p_uniform * 100).toFixed(1)}%</Chip>
           </div>
@@ -400,6 +443,37 @@ function Results({ r }: { r: RemediationResult }) {
             ))}
           </ul>
         </Section>
+      )}
+    </div>
+  );
+}
+
+function QCloudRun({ q }: { q: NonNullable<RemediationResult["qaoa"]> }) {
+  const lift = q.warm_start && q.p_optimal_warm_state ? q.p_optimal / q.p_optimal_warm_state : null;
+  return (
+    <div className="mb-5 space-y-3 border border-rule p-4 text-sm">
+      <p>
+        <span className="eyebrow">Sampled on</span> <span className="font-mono text-ink">{q.backend}</span>
+        {q.cloud?.status === "ok" && <Chip tone="safe" className="ml-2">QpiAI QCloud job</Chip>}
+      </p>
+      {q.cloud?.status === "ok" && (
+        <p className="text-ink-2">
+          Job {q.cloud.job_ids.map((id) => <span key={id} className="font-mono text-ink">{id}</span>)} · experiment {q.cloud.experiment} ·{" "}
+          {q.cloud.shots} shots · {q.cloud.seconds.toFixed(1)} s. It appears in the QCloud console under that experiment.
+        </p>
+      )}
+      {q.cloud?.status === "failed" && (
+        <p className="text-ink-2">
+          QpiAI did not run the job on <span className="font-mono">{q.cloud.device}</span>: <span className="text-urgent">{q.cloud.error}</span>. The
+          results below are from the local simulator.
+        </p>
+      )}
+      {q.warm_start && q.p_optimal_warm_state != null && (
+        <p className="text-ink-2">
+          Warm start: the starting state alone already finds the best plan {(q.p_optimal_warm_state * 100).toFixed(1)}% of the time;
+          after QAOA it is {(q.p_optimal * 100).toFixed(1)}%
+          {lift != null && <> ({lift >= 1 ? `${lift.toFixed(2)}x lift from QAOA` : `QAOA lowered it, ${lift.toFixed(2)}x`})</>}.
+        </p>
       )}
     </div>
   );

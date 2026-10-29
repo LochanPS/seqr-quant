@@ -385,20 +385,27 @@ def plan_opt(findings, actions, budget, mode: str = "local") -> Plan:
     client = Client(api_key=opt_key)
     t0 = time.perf_counter()
     r, sweeps = None, None
-    for sweeps in _SWEEP_LADDER:
-        try:
-            r = solve(model, mode=mode, client=client, num_reads=_NUM_READS, num_sweeps=sweeps, seed=_SEED)
-            break
-        except LocalLimitExceeded:
-            continue
-    if r is None:
-        raise RuntimeError("model too large for local HUBO solving even at the lightest schedule")
+    if mode == "platform":
+        # QpiAI's hosted HUBO solver: a job in the Opt console; it picks its own schedule.
+        r = solve(model, mode="platform", client=client)
+        job = getattr(r, "job_id", None) or getattr(r, "problem_id", None)
+        detail = f"classified {cls}; QpiAI Opt platform job {job or '(no id returned)'}"
+    else:
+        for sweeps in _SWEEP_LADDER:
+            try:
+                r = solve(model, mode=mode, client=client, num_reads=_NUM_READS, num_sweeps=sweeps, seed=_SEED)
+                break
+            except LocalLimitExceeded:
+                continue
+        if r is None:
+            raise RuntimeError("model too large for local HUBO solving even at the lightest schedule")
+        detail = f"classified {cls}; annealing {_NUM_READS} reads x {sweeps} sweeps, seed {_SEED}"
     dt = time.perf_counter() - t0
     assign = getattr(r, "variable_assignment", None) or {}
     chosen = {a.id for a in actions if round(float(assign.get(_var(a.id), 0))) == 1}
     return _plan(f"qpiai_opt:{getattr(r, 'problem_class', cls)}:{getattr(r, 'execution_mode', mode)}",
                  findings, actions, chosen, budget, getattr(r, "solver_time_s", None) or dt,
-                 detail=f"classified {cls}; annealing {_NUM_READS} reads x {sweeps} sweeps, seed {_SEED}")
+                 detail=detail)
 
 
 # ── QpiAI QCloud (QAOA sampling of alternative plans) ────────────────────────
@@ -433,19 +440,74 @@ def _subsets(reduced: list[Action]):
         yield frozenset(reduced[i].id for i in range(len(reduced)) if mask >> i & 1)
 
 
+def _pretrained(objective, x0, max_iterations):
+    """QAOA "optimizer" that keeps the given angles: the platform run then submits exactly one
+    circuit (the final sampling) instead of one job per optimisation step."""
+    return x0, 0.0, {"nfev": 0, "nit": 0}
+
+
+def _warm_assignment(names, reduced: list[Action], plan: set[str], budget: int) -> dict:
+    """Binary assignment of every QUBO variable for a known plan: its actions plus the slack bits
+    that make the budget equation exact. Used as the WarmStart point (any extra auxiliary
+    variable gets an uninformative 0.5)."""
+    coeffs = slack_coefficients(int(budget))
+    spare = int(budget) - int(sum(a.effort for a in reduced if a.id in plan))
+    bits = next((m for m in range(1 << len(coeffs))
+                 if sum(c for i, c in enumerate(coeffs) if m >> i & 1) == spare), 0)
+    by_name = {_var(a.id): float(a.id in plan) for a in reduced}
+    by_name.update({f"s__{i}": float(bits >> i & 1) for i in range(len(coeffs))})
+    return {n: by_name.get(n, 0.5) for n in names}
+
+
+def _score_samples(candidates, reduced, findings, actions, budget) -> list[dict]:
+    plans: dict[frozenset, dict] = {}
+    for c in candidates:
+        assign = c.variable_assignment
+        chosen = frozenset(a.id for a in reduced if round(float(assign.get(_var(a.id), 0))) == 1)
+        p = plans.setdefault(chosen, {"chosen": sorted(chosen), "probability": 0.0})
+        p["probability"] += float(c.probability)
+    for chosen, p in plans.items():
+        e = effort(actions, set(chosen))
+        p.update(effort=e, residual=round(residual(findings, actions, set(chosen)), 2),
+                 feasible=e <= budget + 1e-9)
+    return sorted((p for p in plans.values() if p["feasible"]), key=lambda p: p["residual"])
+
+
+def _p_optimal(feasible: list[dict], best_r: float) -> float:
+    return round(sum(p["probability"] for p in feasible if p["residual"] <= best_r + 1e-6), 4)
+
+
+def _qcloud_error(exc: Exception) -> str:
+    """QpiAI's own server message (e.g. subscription/quota), without the SDK's traceback text."""
+    text = str(exc)
+    if "Server response:" in text:
+        text = text[text.rindex("Server response:") + len("Server response:"):]
+    return text.strip().splitlines()[0][:300] if text.strip() else type(exc).__name__
+
+
 def plan_alternatives_qaoa(findings, actions, budget, focus: list[str], reps: int = 3,
                            max_iterations: int = 150, cvar_alpha: float = 0.25, top: int = 5,
-                           best_known: float | None = None, tight_penalty: bool = True) -> dict:
+                           best_known: float | None = None, tight_penalty: bool = True,
+                           warm_start_plan: list[str] | None = None, device: str | None = None,
+                           experiment: str | None = None, shots: int = 1024) -> dict:
     """QAOA over a reduced action set; every sampled plan re-scored exactly against the budget.
 
     Only the ``focus`` actions are decided; all others stay unselected. The budget is encoded
     exactly with binary slack qubits (a Lagrangian penalty cannot represent it: some feasible
     optima are unreachable by any weight), and every sample is still re-scored exactly.
+
+    Angles are always trained on the local simulator (free). With ``device`` (a QpiAI QCloud
+    backend such as ``QpiAI-QSV-Simulator`` or the ``QpiAI-Indus-1`` QPU) the trained circuit is
+    then sampled there as ONE job; if QpiAI refuses it (no subscription/quota) the local samples
+    stand and the refusal is reported under ``cloud``.
+
+    ``warm_start_plan`` tilts the initial state toward a known plan (warm-start QAOA). The lift
+    is reported against the warm state alone (all angles zero), so it is not double-counted.
     """
     from qpiai_opt.opt_modeller import hubo_to_qubo
     from qpiai_opt.opt_solvers import solve
     from qpiai_opt.opt_solvers.qubo import QUBOProblem
-    from qpiai_opt.quantum import CVaR, QAOA, QpiAIQuantumAuth
+    from qpiai_opt.quantum import CVaR, QAOA, QpiAIQuantumAuth, QuantumRun, WarmStart
 
     _, qc_key = _keys()
     if not qc_key:
@@ -468,45 +530,72 @@ def plan_alternatives_qaoa(findings, actions, budget, focus: list[str], reps: in
     # instance (x0.7-1.2, within run-to-run noise), so energies are passed as-is.
     problem = QUBOProblem(qubo_dict=conv.qubo, num_variables=conv.num_variables, offset=conv.offset,
                           sense="MIN", variable_names=conv.variable_names)
+    warm = None
+    if warm_start_plan is not None:
+        warm = WarmStart(epsilon=0.25, relaxed_solution=_warm_assignment(
+            conv.variable_names, reduced, set(warm_start_plan) & {a.id for a in reduced}, budget))
+    aggregation = CVaR(alpha=cvar_alpha) if cvar_alpha < 1 else None
+
     t0 = time.perf_counter()
     # CVaR-QAOA optimises the best alpha-fraction of samples rather than the mean energy, which
     # pushes probability toward good plans instead of a flat distribution.
-    algo = QAOA(reps=reps, max_iterations=max_iterations,
-                aggregation=CVaR(alpha=cvar_alpha) if cvar_alpha < 1 else None)
-    r = solve(problem, mode="local", algorithm=algo)
+    r = solve(problem, mode="local", algorithm=QAOA(
+        reps=reps, max_iterations=max_iterations, aggregation=aggregation, warm_start=warm))
     dt = time.perf_counter() - t0
+    angles = list(r.quantum.optimized_parameters)
 
-    plans: dict[frozenset, dict] = {}
-    for c in r.quantum.candidates:
-        assign = c.variable_assignment
-        chosen = frozenset(a.id for a in reduced if round(float(assign.get(_var(a.id), 0))) == 1)
-        p = plans.setdefault(chosen, {"chosen": sorted(chosen), "probability": 0.0})
-        p["probability"] += float(c.probability)
-    scored = []
-    for chosen, p in plans.items():
-        e = effort(actions, set(chosen))
-        p.update(effort=e, residual=round(residual(findings, actions, set(chosen)), 2),
-                 feasible=e <= budget + 1e-9)
-        scored.append(p)
-    feasible = sorted((p for p in scored if p["feasible"]), key=lambda p: p["residual"])
     # Ground truth for the reduced space by enumeration (<= 2^7 plans), so P(optimum) is
     # measured against the real optimum, not merely the best plan QAOA happened to sample.
     best_r = min(round(residual(findings, actions, set(c)), 2) for c in _subsets(reduced)
                  if effort(actions, set(c)) <= budget + 1e-9)
-    p_opt = sum(p["probability"] for p in feasible if p["residual"] <= best_r + 1e-6)
+    feasible = _score_samples(r.quantum.candidates, reduced, findings, actions, budget)
     n_states = 2 ** len(reduced)
-    return {
+    out = {
         "qubits": conv.num_variables, "reduced_actions": [a.id for a in reduced], "reps": reps,
         "cvar_alpha": cvar_alpha,
         "seconds": round(dt, 2), "budget_penalty": round(penalty, 1),
         "slack_bits": len(slack_coefficients(int(budget))),
-        "alternatives": feasible[:top],
         "reduced_optimum": best_r,
-        "sampled_optimum": bool(feasible) and feasible[0]["residual"] <= best_r + 1e-6,
         "contains_best_known": best_known is None or best_r <= best_known + 1e-6,
-        "p_optimal": round(p_opt, 4), "p_uniform": round(1 / n_states, 4),
-        "amplification": round(p_opt * n_states, 2) if n_states else None,
+        "p_uniform": round(1 / n_states, 4),
+        "backend": "QpiAI-QSV-Local", "warm_start": warm is not None,
+        "optimized_parameters": [round(x, 4) for x in angles],
     }
+
+    if warm is not None:
+        # The warm state alone (no QAOA evolution) is the baseline the warm-start lift is
+        # measured against.
+        r0 = solve(problem, mode="local", algorithm=QAOA(
+            reps=reps, initial_point=[0.0] * len(angles), optimizer=_pretrained,
+            aggregation=aggregation, warm_start=warm))
+        out["p_optimal_warm_state"] = _p_optimal(
+            _score_samples(r0.quantum.candidates, reduced, findings, actions, budget), best_r)
+
+    if device:
+        name = experiment or os.environ.get("QCLOUD_EXPERIMENT") or "Default Experiment"
+        cloud = {"device": device, "experiment": name, "shots": shots}
+        t1 = time.perf_counter()
+        try:
+            rc = solve(problem, mode="platform", algorithm=QAOA(
+                reps=reps, initial_point=angles, optimizer=_pretrained,
+                aggregation=aggregation, warm_start=warm),
+                execution=QuantumRun(shots=shots, device_name=device, experiment_name=name, timeout=600))
+            feasible = _score_samples(rc.quantum.candidates, reduced, findings, actions, budget)
+            cloud.update(status="ok", job_ids=list(rc.quantum.job_ids))
+            out["backend"] = device
+        except Exception as e:  # subscription/quota/maintenance: keep the local samples
+            cloud.update(status="failed", error=_qcloud_error(e), job_ids=[])
+        cloud["seconds"] = round(time.perf_counter() - t1, 2)
+        out["cloud"] = cloud
+
+    p_opt = _p_optimal(feasible, best_r)
+    out.update(
+        alternatives=feasible[:top],
+        sampled_optimum=bool(feasible) and feasible[0]["residual"] <= best_r + 1e-6,
+        p_optimal=p_opt,
+        amplification=round(p_opt * n_states, 2) if n_states else None,
+    )
+    return out
 
 
 # ── reporting ─────────────────────────────────────────────────────────────────
