@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 
 from app.config import settings
-from app.routers import auth, organisation, assets, scans, cbom, risk, reports, public, admin, blog, spine, migration, ci, github_app, agent, audit, sso, saml
+from app.routers import auth, organisation, assets, scans, cbom, risk, reports, public, admin, blog, spine, migration, ci, github_app, agent, audit, sso, saml, remediation
 
 
 @asynccontextmanager
@@ -107,6 +107,7 @@ app.include_router(agent.router, prefix="/api/v1/agent", tags=["agent"])
 app.include_router(audit.router, prefix="/api/v1/audit", tags=["audit"])
 app.include_router(sso.router, prefix="/api/v1/sso", tags=["sso"])
 app.include_router(saml.router, prefix="/api/v1/saml", tags=["saml"])
+app.include_router(remediation.router, prefix="/api/v1/remediation", tags=["remediation"])
 
 
 @app.get("/api/v1/health")

@@ -169,6 +169,13 @@ export const api = {
     attestationDownloadUrl: (id: string) => `${BASE}/graph/attestations/${id}/download`,
     attestationCertUrl: (id: string) => `${BASE}/graph/attestations/${id}/certificate.pdf`,
   },
+  remediation: {
+    plan: (body: RemediationRequest) =>
+      request<RemediationResult>("/remediation/plan", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+  },
   migration: {
     pipeline: () => request<PipelineStatus>("/migration/pipeline"),
     dryRun: () => request<DryRun>("/migration/dry-run", { method: "POST" }),
@@ -387,3 +394,68 @@ export interface VerifyReport {
 }
 
 export { BASE as API_BASE };
+
+// ── Remediation planner (risk v2 + QpiAI Opt) ────────────────────────────────
+
+export interface RemediationRequest {
+  report?: Record<string, unknown> | null;
+  budget: number;
+  use_opt: boolean;
+  use_qaoa: boolean;
+  curve?: number[];
+}
+
+export interface RemediationPlan {
+  method: string;
+  chosen: string[];
+  effort: number;
+  budget: number;
+  residual: number;
+  removed_pct: number;
+  feasible: boolean;
+  solver_time_s: number | null;
+  detail: string;
+}
+
+export interface RemediationAlternative {
+  chosen: string[];
+  probability: number;
+  effort: number;
+  residual: number;
+  feasible: boolean;
+}
+
+export interface RemediationResult {
+  source: string;
+  baseline_risk: number;
+  budget: number;
+  actions: { id: string; label: string; effort: number; covers: number }[];
+  findings: {
+    rel_path: string;
+    line_number: number;
+    algorithm: string;
+    score: number;
+    tier: string;
+    role: string;
+    exposure: string;
+    hndl: boolean;
+    effort_hours: number;
+    top_reason: string;
+  }[];
+  plans: { greedy?: RemediationPlan; exhaustive?: RemediationPlan | null; opt?: RemediationPlan };
+  errors: Record<string, string>;
+  curve: { budget: number; removed_pct: number; chosen: string[]; method: string }[];
+  qaoa?: {
+    qubits: number;
+    reduced_actions: string[];
+    reps: number;
+    cvar_alpha: number;
+    seconds: number;
+    alternatives: RemediationAlternative[];
+    p_optimal: number;
+    p_uniform: number;
+    amplification: number | null;
+  };
+  opt_gap_to_optimum?: number;
+  notes: string[];
+}

@@ -1,0 +1,133 @@
+"""Remediation planner API — budget-constrained fix selection over risk-v2 findings.
+
+Stateless and read-only: the caller posts a risk-v2 report (``seqr scan code --context ...
+--output json``) or asks for the bundled ACME sample, plus an engineer-hour budget. Nothing is
+stored and no org data is read, so there is no tenancy surface beyond authentication.
+
+Solvers: greedy (value per hour), exhaustive (certified optimum, small instances), QpiAI Opt
+(native HUBO, needs the Opt key + network), optional QpiAI QCloud QAOA (alternative plans).
+A solver that is unavailable reports an error in its slot instead of failing the request.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Annotated, Any, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, Field
+
+from app.migration import remediation as rem
+from app.models.user import User
+from app.security import get_current_user
+
+router = APIRouter()
+
+_SAMPLE = Path(__file__).resolve().parents[4] / "examples" / "acme-risk-v2.json"
+_MAX_FINDINGS = 2000
+
+HNDL_DISCLAIMER = (
+    "HNDL exposure scores are predictive cryptographic risk metrics based on data-type "
+    "endurance, not indicators of active data interception or confirmed network breaches."
+)
+
+
+class PlanRequest(BaseModel):
+    report: Optional[dict[str, Any]] = Field(
+        default=None, description="risk-v2 report; omit to use the bundled ACME sample")
+    budget: float = Field(default=40, gt=0, le=10_000, description="engineer-hours available")
+    use_opt: bool = True
+    use_qaoa: bool = False
+    curve: list[float] = Field(default_factory=lambda: [20, 40, 80], max_length=8)
+
+
+def _plan_out(p: rem.Plan | None) -> dict | None:
+    if p is None:
+        return None
+    return {"method": p.method, "chosen": p.chosen, "effort": p.effort, "budget": p.budget,
+            "residual": p.residual, "removed_pct": round(p.removed_pct, 1),
+            "feasible": p.feasible, "solver_time_s": p.solver_time_s, "detail": p.detail}
+
+
+def _compute(report: dict, req: PlanRequest) -> dict:
+    findings = rem.findings_from_dict(report)
+    actions = rem.build_actions(findings)
+    out: dict[str, Any] = {
+        "baseline_risk": round(sum(f.score for f in findings), 1),
+        "budget": req.budget,
+        "actions": [{"id": a.id, "label": a.label, "effort": a.effort, "covers": len(a.covers)}
+                    for a in actions],
+        "findings": [
+            {k: f.get(k) for k in ("rel_path", "line_number", "algorithm", "score", "tier", "role",
+                                   "exposure", "hndl", "effort_hours", "top_reason")}
+            for f in sorted(report["findings"], key=lambda f: -float(f["score"]))
+        ],
+        "plans": {}, "errors": {},
+        "notes": [
+            "Coverage fractions and efforts are stated assumptions, not measurements.",
+            HNDL_DISCLAIMER,
+        ],
+    }
+    greedy = rem.plan_greedy(findings, actions, req.budget)
+    exact = rem.plan_exhaustive(findings, actions, req.budget)
+    out["plans"]["greedy"] = _plan_out(greedy)
+    out["plans"]["exhaustive"] = _plan_out(exact)
+
+    opt = None
+    if req.use_opt:
+        try:
+            opt = rem.plan_opt(findings, actions, req.budget)
+            out["plans"]["opt"] = _plan_out(opt)
+        except Exception as e:  # missing key, auth service down, local limits
+            out["errors"]["opt"] = f"{type(e).__name__}: {e}"
+
+    # Risk curve: exhaustive is instant and certified on small instances; Opt otherwise.
+    curve = []
+    for b in sorted({float(x) for x in req.curve if x > 0}):
+        try:
+            p = rem.plan_exhaustive(findings, actions, b) if exact else rem.plan_opt(findings, actions, b)
+            curve.append({"budget": b, "removed_pct": round(p.removed_pct, 1), "chosen": p.chosen,
+                          "method": p.method})
+        except Exception as e:
+            out["errors"].setdefault("curve", f"{type(e).__name__}: {e}")
+            break
+    out["curve"] = curve
+
+    if req.use_qaoa:
+        try:
+            focus = rem.contested_actions([p for p in (opt, exact, greedy) if p], findings, actions)
+            out["qaoa"] = rem.plan_alternatives_qaoa(findings, actions, req.budget, focus)
+            out["notes"].append(
+                f"QAOA explores {2 ** len(focus)} plans with 1024 shots, so sampling covers the space; "
+                "the alternatives menu is not evidence of quantum advantage.")
+        except Exception as e:
+            out["errors"]["qaoa"] = f"{type(e).__name__}: {e}"
+
+    if opt and exact:
+        out["opt_gap_to_optimum"] = round(opt.residual - exact.residual, 2)
+    return out
+
+
+@router.post("/plan")
+async def plan(req: PlanRequest, current_user: Annotated[User, Depends(get_current_user)]):
+    if req.report is None:
+        if not _SAMPLE.exists():
+            raise HTTPException(status_code=404, detail="bundled sample report not found")
+        report = json.loads(_SAMPLE.read_text(encoding="utf-8"))
+        source = "sample:acme-risk-v2"
+    else:
+        report = req.report
+        source = "uploaded"
+    findings = report.get("findings") if isinstance(report, dict) else None
+    if not isinstance(findings, list) or not findings:
+        raise HTTPException(status_code=422, detail="report.findings must be a non-empty list")
+    if len(findings) > _MAX_FINDINGS:
+        raise HTTPException(status_code=422, detail=f"at most {_MAX_FINDINGS} findings per request")
+    try:
+        result = await run_in_threadpool(_compute, report, req)
+    except (KeyError, TypeError, ValueError) as e:
+        raise HTTPException(status_code=422, detail=f"malformed risk-v2 report: {e}")
+    result["source"] = source
+    return result

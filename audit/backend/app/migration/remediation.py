@@ -84,7 +84,11 @@ class Action:
 
 def load_findings(path: str | Path) -> list[Finding]:
     """Read risk-v2 JSON (``seqr scan code --ranked --output json``)."""
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return findings_from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
+
+
+def findings_from_dict(data: dict) -> list[Finding]:
+    """Risk-v2 report dict -> Findings. Raises KeyError/ValueError on malformed input."""
     out = []
     for f in data["findings"]:
         out.append(Finding(
