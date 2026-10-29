@@ -1,54 +1,47 @@
 "use client";
 
-import * as React from "react";
-import * as TabsPrimitive from "@radix-ui/react-tabs";
+import * as T from "@radix-ui/react-tabs";
+import { motion } from "motion/react";
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
-const Tabs = TabsPrimitive.Root;
+export const Tabs = T.Root;
+export const TabsContent = ({ className, ...p }: T.TabsContentProps) => (
+  <T.Content className={cn("pt-8 focus-visible:outline-none", className)} {...p} />
+);
 
-const TabsList = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      "inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
-      className
-    )}
-    {...props}
-  />
-));
-TabsList.displayName = TabsPrimitive.List.displayName;
-
-const TabsTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
-      className
-    )}
-    {...props}
-  />
-));
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
-
-const TabsContent = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      "mt-4 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      className
-    )}
-    {...props}
-  />
-));
-TabsContent.displayName = TabsPrimitive.Content.displayName;
-
-export { Tabs, TabsList, TabsTrigger, TabsContent };
+/** Tab rail with a sliding ink rule under the active tab. */
+export function TabsList({
+  items,
+  value,
+  className,
+}: {
+  items: { value: string; label: React.ReactNode }[];
+  value: string;
+  className?: string;
+}) {
+  const layoutId = useId();
+  return (
+    <T.List className={cn("flex gap-6 overflow-x-auto border-b border-rule", className)}>
+      {items.map((it) => (
+        <T.Trigger
+          key={it.value}
+          value={it.value}
+          className={cn(
+            "relative shrink-0 pb-3 pt-1 text-sm font-medium transition-colors duration-micro",
+            value === it.value ? "text-ink" : "text-ink-3 hover:text-ink"
+          )}
+        >
+          {it.label}
+          {value === it.value && (
+            <motion.span
+              layoutId={layoutId}
+              className="absolute inset-x-0 -bottom-px h-[2px] bg-ink"
+              transition={{ type: "spring", stiffness: 500, damping: 40 }}
+            />
+          )}
+        </T.Trigger>
+      ))}
+    </T.List>
+  );
+}

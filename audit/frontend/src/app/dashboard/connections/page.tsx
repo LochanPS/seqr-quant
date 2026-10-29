@@ -1,312 +1,235 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Activity,
-  Check,
-  Copy,
-  Loader2,
-  PlugZap,
-  Plus,
-  Radio,
-  Server,
-  Trash2,
-} from "lucide-react";
-import { api, API_BASE, type AgentCredential } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { api, API_BASE, type AgentCredentialCreated } from "@/lib/api";
+import { errMsg, humanize } from "@/lib/utils";
+import { PageHeader, RelTime, Section } from "@/components/ui/page";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Field, Input } from "@/components/ui/field";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { EmptyState, ErrorState, ReadoutSkeleton, TableSkeleton } from "@/components/ui/feedback";
+import { Chip, StatusChip } from "@/components/ui/marks";
+import { CountUp, Readout, ReadoutStrip } from "@/components/ui/numbers";
+import { CodeBlock } from "@/components/ui/code";
+import { SecretOnce } from "@/components/ui/secret";
+import { TBody, THead, Table, Td, Th, Tr } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
-import { formatDate } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/confirm";
+import { IconPlus } from "@/components/icons";
 
-export default function ConnectionsPage() {
+const KNOWN_PLUGINS = ["tls_kex", "tls_cert", "ssh_key", "cert_store", "proxy_conf", "pkcs11", "k8s", "cloud"];
+
+function ConnectionsInner() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (params.get("new") === "1") {
+      setOpen(true);
+      router.replace("/dashboard/connections");
+    }
+  }, [params, router]);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Connections</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Connect on-prem discovery agents that inventory internal cryptography —
-          cert stores, TLS listeners, internal PKI — and feed your posture graph.
-        </p>
-      </div>
-
-      <CoverageCard />
-      <AgentsCard />
+    <div className="space-y-14">
+      <PageHeader
+        eyebrow="Discovery"
+        title="Connections"
+        description="On-prem discovery agents inventory what the internet cannot see: certificate stores, internal TLS listeners, proxies, HSMs and Kubernetes secrets. Their observations feed the graph."
+        actions={
+          <Button onClick={() => setOpen(true)}>
+            <IconPlus size={16} /> Connect agent
+          </Button>
+        }
+      />
+      <Coverage />
+      <Credentials onConnect={() => setOpen(true)} />
+      <Setup />
+      <ConnectDialog open={open} onOpenChange={setOpen} />
     </div>
   );
 }
 
-function CoverageCard() {
-  const coverage = useQuery({
-    queryKey: ["agent-coverage"],
-    queryFn: api.agent.coverage,
-  });
-
-  if (coverage.isLoading) return <Skeleton className="h-28 w-full" />;
-  const c = coverage.data;
-  if (!c || c.observations === 0) return null;
-
-  const stats = [
-    { icon: Activity, label: "Observations", value: c.observations },
-    { icon: Server, label: "Assets covered", value: c.assets_covered },
-    {
-      icon: Radio,
-      label: "Last seen",
-      value: c.last_observed_at ? formatDate(c.last_observed_at) : "—",
-    },
-  ];
-
+function Coverage() {
+  const c = useQuery({ queryKey: ["agent-coverage"], queryFn: api.agent.coverage });
+  if (c.isLoading) return <ReadoutSkeleton />;
+  if (c.isError) return <ErrorState message={errMsg(c.error)} onRetry={() => c.refetch()} />;
+  const d = c.data!;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Activity className="h-4 w-4 text-quantum" /> Agent coverage
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-xl border bg-card/40 p-4"
-            >
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <s.icon className="h-3.5 w-3.5" /> {s.label}
-              </div>
-              <div className="mt-1 text-xl font-semibold">{s.value}</div>
-            </div>
+    <Section index="01" title="Coverage" description="What the agent plane has reported so far.">
+      <ReadoutStrip cols={4}>
+        <Readout label="Agent" value={<span className="text-2xl">{d.agent ?? "none yet"}</span>} />
+        <Readout label="Observations" value={<CountUp value={d.observations} />} />
+        <Readout label="Assets covered" value={<CountUp value={d.assets_covered} />} />
+        <Readout label="Last observed" value={<span className="text-2xl"><RelTime value={d.last_observed_at} /></span>} foot={d.last_event_at ? <>last event <RelTime value={d.last_event_at} /></> : undefined} />
+      </ReadoutStrip>
+      <div className="mt-5">
+        <p className="eyebrow mb-2">Collectors</p>
+        <div className="flex flex-wrap gap-2">
+          {Array.from(new Set([...KNOWN_PLUGINS, ...d.plugin_coverage])).map((p) => (
+            <Chip key={p} tone={d.plugin_coverage.includes(p) ? "safe" : "neutral"}>
+              {humanize(p)} {d.plugin_coverage.includes(p) ? "reporting" : "idle"}
+            </Chip>
           ))}
         </div>
-        {c.plugin_coverage.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Coverage:</span>
-            {c.plugin_coverage.map((p) => (
-              <Badge key={p} variant="secondary" className="font-mono text-xs">
-                {p}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }
 
-function AgentsCard() {
+function Credentials({ onConnect }: { onConnect: () => void }) {
   const qc = useQueryClient();
-  const { toast } = useToast();
-  const agents = useQuery({
-    queryKey: ["agent-credentials"],
-    queryFn: api.agent.credentials.list,
-  });
-
-  const [open, setOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  const create = useMutation({
-    mutationFn: () => api.agent.credentials.create(newName || "discovery-agent"),
-    onSuccess: (res) => {
-      setCreatedKey(res.key);
-      setNewName("");
-      qc.invalidateQueries({ queryKey: ["agent-credentials"] });
-    },
-    onError: (e) =>
-      toast({
-        title: "Could not connect agent",
-        description: (e as Error).message,
-        variant: "error",
-      }),
-  });
-
+  const toast = useToast();
+  const confirm = useConfirm();
+  const creds = useQuery({ queryKey: ["agent-credentials"], queryFn: api.agent.credentials.list });
   const revoke = useMutation({
     mutationFn: (id: string) => api.agent.credentials.revoke(id),
     onSuccess: () => {
-      toast({ title: "Agent revoked", variant: "success" });
       qc.invalidateQueries({ queryKey: ["agent-credentials"] });
+      toast({ title: "Credential revoked", description: "The agent can no longer push observations.", tone: "success" });
     },
-    onError: (e) =>
-      toast({
-        title: "Revoke failed",
-        description: (e as Error).message,
-        variant: "error",
-      }),
+    onError: (e) => toast({ title: "Could not revoke", description: errMsg(e), tone: "error" }),
   });
 
-  function copyKey() {
-    if (createdKey) {
-      navigator.clipboard.writeText(createdKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }
-  }
-
-  const list = agents.data ?? [];
-
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <PlugZap className="h-4 w-4 text-quantum" /> Discovery agents
-        </CardTitle>
-        <Button
-          size="sm"
-          onClick={() => {
-            setCreatedKey(null);
-            setOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" /> Connect agent
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {agents.isLoading ? (
-          <Skeleton className="h-40 w-full" />
-        ) : list.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Prefix</TableHead>
-                <TableHead>Last seen</TableHead>
-                <TableHead>Connected</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.map((a: AgentCredential) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium">{a.name}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {a.key_prefix}…
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {a.last_used_at ? formatDate(a.last_used_at) : "Never"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(a.created_at)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-vulnerable"
-                      onClick={() => {
-                        if (
-                          confirm(
-                            `Revoke agent "${a.name}"? It will no longer be able to upload. This cannot be undone.`
-                          )
-                        )
-                          revoke.mutate(a.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PlugZap className="h-4 w-4 text-quantum" /> Connect discovery agent
-            </DialogTitle>
-          </DialogHeader>
-
-          {createdKey ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Copy this agent key now — it grants upload access and will not be
-                shown again. Put it in the agent&apos;s{" "}
-                <code className="font-mono text-xs">agent.yaml</code>.
-              </p>
-              <div className="flex items-center gap-2 rounded-lg border border-quantum/40 bg-quantum/5 p-3">
-                <code className="flex-1 break-all font-mono text-xs">
-                  {createdKey}
-                </code>
-                <Button size="icon" variant="ghost" onClick={copyKey}>
-                  {copied ? (
-                    <Check className="h-4 w-4 text-safe" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-urgent">
-                ⚠ Agent-scoped key. Store it in the agent host&apos;s secret store.
-              </p>
-              <DialogFooter>
-                <Button onClick={() => setOpen(false)}>Done</Button>
-              </DialogFooter>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="agent-name">Agent name</Label>
-                <Input
-                  id="agent-name"
-                  placeholder="dc-mumbai-agent"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  A label for where this agent runs (a datacentre, a host, a segment).
-                </p>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => create.mutate()} disabled={create.isPending}>
-                  {create.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Connect"
-                  )}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Card>
+    <Section index="02" title="Agent credentials" description="Each agent signs in with its own key, scoped to pushing observations.">
+      {creds.isLoading ? (
+        <TableSkeleton cols={6} rows={3} />
+      ) : creds.isError ? (
+        <ErrorState message={errMsg(creds.error)} onRetry={() => creds.refetch()} />
+      ) : !creds.data?.length ? (
+        <EmptyState title="No agents connected" body="Mint a key for your first agent, then follow the setup below." action={{ label: "Connect agent", onClick: onConnect }} />
+      ) : (
+        <Table>
+          <THead>
+            <tr>
+              <Th>Name</Th>
+              <Th>Prefix</Th>
+              <Th>Last seen</Th>
+              <Th>Connected</Th>
+              <Th>Expires</Th>
+              <Th align="right">
+                <span className="sr-only">Actions</span>
+              </Th>
+            </tr>
+          </THead>
+          <TBody>
+            {creds.data.map((c) => (
+              <Tr key={c.id}>
+                <Td label="Name">{c.name}</Td>
+                <Td label="Prefix" mono>
+                  {c.key_prefix}
+                </Td>
+                <Td label="Last seen" className="text-ink-2">
+                  <RelTime value={c.last_used_at} />
+                </Td>
+                <Td label="Connected">
+                  <StatusChip value={c.last_used_at ? "active" : "pending"} />
+                </Td>
+                <Td label="Expires" className="text-ink-2">
+                  {c.expires_at ? <RelTime value={c.expires_at} /> : "never"}
+                </Td>
+                <Td align="right">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    pending={revoke.isPending && revoke.variables === c.id}
+                    pendingLabel="Revoking"
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: "Revoke this agent credential?",
+                        subject: `${c.name} · ${c.key_prefix}`,
+                        body: "The agent using it stops reporting immediately. Observations already received stay in the graph.",
+                        confirmLabel: "Revoke",
+                      });
+                      if (ok) revoke.mutate(c.id);
+                    }}
+                  >
+                    Revoke
+                  </Button>
+                </Td>
+              </Tr>
+            ))}
+          </TBody>
+        </Table>
+      )}
+    </Section>
   );
 }
 
-function EmptyState() {
-  const [copied, setCopied] = useState<string | null>(null);
+function ConnectDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [name, setName] = useState("");
+  const [expires, setExpires] = useState("");
+  const [created, setCreated] = useState<AgentCredentialCreated | null>(null);
 
-  const yaml = `# agent.yaml — on-prem SeQr discovery agent
+  useEffect(() => {
+    if (!open) {
+      setName("");
+      setExpires("");
+      setCreated(null);
+    }
+  }, [open]);
+
+  const create = useMutation({
+    mutationFn: () => api.agent.credentials.create(name.trim() || "discovery-agent", expires ? new Date(expires).toISOString() : null),
+    onSuccess: (c) => {
+      setCreated(c);
+      qc.invalidateQueries({ queryKey: ["agent-credentials"] });
+    },
+    onError: (e) => toast({ title: "Could not create the credential", description: errMsg(e), tone: "error" }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent title={created ? "Agent key created" : "Connect an agent"} description={created ? undefined : "Mint a key for one discovery agent. Use one key per agent so you can revoke them separately."}>
+        {created ? (
+          <>
+            <SecretOnce label={`Key for ${created.name}`} value={created.key} />
+            <DialogFooter>
+              <Button onClick={() => onOpenChange(false)}>Done</Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              create.mutate();
+            }}
+            className="space-y-5"
+          >
+            <Field label="Agent name">
+              {({ id }) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} placeholder="dc-mumbai-agent" autoFocus />}
+            </Field>
+            <Field label="Expires" hint="Optional. Leave empty for a key that does not expire.">
+              {({ id, describedBy }) => (
+                <Input id={id} type="date" value={expires} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setExpires(e.target.value)} aria-describedby={describedBy} className="w-48 font-mono" />
+              )}
+            </Field>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" pending={create.isPending} pendingLabel="Creating">
+                Create key
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Setup() {
+  const yaml = `# agent.yaml for the on-prem SeQr discovery agent
 api_url: ${API_BASE}
-api_key: sq_live_...        # from "Connect agent" above
-mode: connected             # or: air-gapped (writes a signed export file)
+api_key: sq_live_...        # from "Connect agent"
+mode: connected             # or air-gapped: writes a signed export file
 plugins: [tls, cert_store, proxy_conf, pkcs11, ssh, k8s, cloud]
 schedule: "0 * * * *"       # hourly`;
 
@@ -327,57 +250,35 @@ schedule: "0 * * * *"       # hourly`;
     ]
   }'`;
 
-  function copy(id: string, text: string) {
-    navigator.clipboard.writeText(text);
-    setCopied(id);
-    setTimeout(() => setCopied(null), 1500);
-  }
+  const steps = [
+    { t: "Mint a key", b: "Select Connect agent above. Copy the key; it is shown once." },
+    { t: "Configure the agent", b: "Save this as agent.yaml next to the agent binary, with your key in place of the placeholder.", code: yaml, file: "agent.yaml" },
+    { t: "Run it", b: "Start the agent with seqr-agent run. In air-gapped mode use seqr-agent export, then import the signed file from an admin session." },
+    { t: "Or push directly", b: "Any system can post observations with the same key.", code: curl, file: "push-observation.sh" },
+  ];
 
   return (
-    <div className="space-y-5 py-4">
-      <div className="text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-quantum/10">
-          <PlugZap className="h-6 w-6 text-quantum" />
-        </div>
-        <h3 className="mt-3 text-sm font-semibold">
-          Connect your first discovery agent
-        </h3>
-        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          Click <span className="font-medium">Connect agent</span> to mint a key,
-          drop it into the agent config, and internal crypto posture starts flowing
-          into your graph. No egress required — the agent can also export a signed
-          file for air-gapped import.
-        </p>
-      </div>
+    <Section index="03" title="Setup" description="Four steps from nothing to a reporting agent.">
+      <ol className="border-t border-ink">
+        {steps.map((s, i) => (
+          <li key={s.t} className="grid gap-4 border-b border-rule py-6 lg:grid-cols-[260px_1fr]">
+            <div>
+              <p className="font-mono text-xs text-ink-3">{String(i + 1).padStart(2, "0")}</p>
+              <p className="mt-1 font-display text-xl text-ink">{s.t}</p>
+              <p className="mt-1 text-sm text-ink-2">{s.b}</p>
+            </div>
+            {s.code && <CodeBlock code={s.code} filename={s.file} />}
+          </li>
+        ))}
+      </ol>
+    </Section>
+  );
+}
 
-      {[
-        { id: "yaml", label: "agent.yaml", body: yaml },
-        { id: "curl", label: "Or push directly", body: curl },
-      ].map((s) => (
-        <div key={s.id} className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {s.label}
-            </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1.5 text-xs"
-              onClick={() => copy(s.id, s.body)}
-            >
-              {copied === s.id ? (
-                <Check className="h-3.5 w-3.5 text-safe" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              Copy
-            </Button>
-          </div>
-          <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
-            {s.body}
-          </pre>
-        </div>
-      ))}
-    </div>
+export default function ConnectionsPage() {
+  return (
+    <Suspense fallback={<ReadoutSkeleton />}>
+      <ConnectionsInner />
+    </Suspense>
   );
 }

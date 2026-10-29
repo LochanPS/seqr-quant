@@ -1,131 +1,215 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type BlogPost } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { errMsg } from "@/lib/utils";
+import { PageHeader, RelTime, Section, Segmented } from "@/components/ui/page";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Field, Input, Textarea } from "@/components/ui/field";
+import { EmptyState, ErrorState, TableSkeleton } from "@/components/ui/feedback";
+import { Chip, StatusChip } from "@/components/ui/marks";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm";
+import { Markdown } from "@/components/markdown";
+import { OperatorGate } from "@/components/admin/operator-gate";
+import { IconExternal } from "@/components/icons";
 
-export default function AdminBlogPage() {
+type Draft = { id: string | null; title: string; excerpt: string; body: string; tags: string };
+const EMPTY: Draft = { id: null, title: "", excerpt: "", body: "", tags: "" };
+
+function Cms() {
   const qc = useQueryClient();
-  const { toast } = useToast();
-  const [title, setTitle] = useState("");
-  const [excerpt, setExcerpt] = useState("");
-  const [body, setBody] = useState("");
-  const [tags, setTags] = useState("");
-
+  const toast = useToast();
+  const confirm = useConfirm();
   const posts = useQuery({ queryKey: ["admin-posts"], queryFn: api.admin.posts });
+  const [d, setD] = useState<Draft>(EMPTY);
+  const [pane, setPane] = useState<"write" | "preview">("write");
 
-  const reset = () => { setTitle(""); setExcerpt(""); setBody(""); setTags(""); };
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-posts"] });
+  const tags = d.tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const done = (title: string) => {
+    qc.invalidateQueries({ queryKey: ["admin-posts"] });
+    toast({ title, tone: "success" });
+  };
 
-  const create = useMutation({
-    mutationFn: (status: string) =>
-      api.admin.createPost({
-        title, excerpt: excerpt || undefined, body,
-        tags: tags.split(",").map((t) => t.trim()).filter(Boolean), status,
-      }),
-    onSuccess: () => { invalidate(); reset(); toast({ title: "Post saved", variant: "success" }); },
-    onError: (e) => toast({ title: "Save failed", description: (e as Error).message, variant: "error" }),
+  const save = useMutation({
+    mutationFn: (status: "draft" | "published") => {
+      const data: Partial<BlogPost> = { title: d.title.trim(), excerpt: d.excerpt.trim() || null, body: d.body, tags, status };
+      return d.id ? api.admin.updatePost(d.id, data) : api.admin.createPost(data);
+    },
+    onSuccess: (p) => {
+      done(p.status === "published" ? "Post published" : "Draft saved");
+      setD(EMPTY);
+      setPane("write");
+    },
+    onError: (e) => toast({ title: "Could not save the post", description: errMsg(e), tone: "error" }),
   });
-
-  const update = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<BlogPost> }) => api.admin.updatePost(id, data),
-    onSuccess: () => { invalidate(); toast({ title: "Updated", variant: "success" }); },
+  const setStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => api.admin.updatePost(id, { status }),
+    onSuccess: (p) => done(p.status === "published" ? "Post published" : "Post unpublished"),
+    onError: (e) => toast({ title: "Could not change status", description: errMsg(e), tone: "error" }),
   });
   const del = useMutation({
     mutationFn: (id: string) => api.admin.deletePost(id),
-    onSuccess: () => { invalidate(); toast({ title: "Deleted", variant: "success" }); },
+    onSuccess: () => done("Post deleted"),
+    onError: (e) => toast({ title: "Could not delete", description: errMsg(e), tone: "error" }),
   });
 
-  if (posts.isError) {
-    const msg = (posts.error as Error)?.message || "";
-    return (
-      <div className="mx-auto max-w-md py-24 text-center">
-        <h1 className="text-xl font-semibold">Operator access required</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{msg.includes("Operator") ? "SeQr Labs staff only." : msg}</p>
-        <Link href="/dashboard" className="mt-4 inline-block text-sm underline">← Dashboard</Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Blog / CMS</h1>
-        <Link href="/admin" className="text-sm text-muted-foreground underline">← Operator console</Link>
-      </div>
+    <div className="space-y-12">
+      <PageHeader
+        eyebrow="Operator console"
+        title="Blog and CMS"
+        description="Write in markdown, preview, then publish to /blog."
+        actions={
+          <Button asChild variant="ghost">
+            <Link href="/admin">Operator console</Link>
+          </Button>
+        }
+      />
 
-      <Card className="mb-8">
-        <CardHeader><CardTitle>New post</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="PQC is coming to Indian fintech" />
+      <Section index="01" title={d.id ? "Edit post" : "New post"} actions={d.id ? <Button variant="ghost" size="sm" onClick={() => setD(EMPTY)}>Start a new post instead</Button> : undefined}>
+        <form
+          className="space-y-5 border-t border-ink pt-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (d.title.trim()) save.mutate("draft");
+          }}
+        >
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Field label="Title">{({ id }) => <Input id={id} value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} placeholder="PQC is coming to Indian fintech" />}</Field>
+            <Field label="Excerpt" hint="One or two sentences. Used for search results and the blog index.">
+              {({ id, describedBy }) => <Input id={id} value={d.excerpt} onChange={(e) => setD({ ...d, excerpt: e.target.value })} placeholder="Why SEBI CSCRF makes a CBOM urgent" aria-describedby={describedBy} />}
+            </Field>
           </div>
-          <div className="space-y-2">
-            <Label>Excerpt (SEO summary)</Label>
-            <Input value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Why SEBI CSCRF makes a CBOM urgent" />
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[13px] font-medium text-ink-2">Body</span>
+              <Segmented
+                label="Editor pane"
+                value={pane}
+                onChange={setPane}
+                options={[
+                  { value: "write", label: "Write" },
+                  { value: "preview", label: "Preview" },
+                ]}
+              />
+            </div>
+            <div className="grid gap-px border border-rule bg-rule xl:grid-cols-2">
+              <Textarea
+                aria-label="Body in markdown"
+                value={d.body}
+                onChange={(e) => setD({ ...d, body: e.target.value })}
+                placeholder={"## Heading\n\nYour post, in markdown."}
+                className={`${pane === "preview" ? "hidden xl:block" : ""} min-h-[360px] border-0 font-mono text-[13px]`}
+              />
+              <div className={`${pane === "write" ? "hidden xl:block" : ""} min-h-[360px] overflow-auto bg-bg p-5`}>
+                {d.body.trim() ? <Markdown source={d.body} /> : <p className="text-sm text-ink-3">The preview appears here as you write.</p>}
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Body (markdown)</Label>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={10}
-              className="w-full rounded-md border bg-transparent p-3 font-mono text-sm"
-              placeholder="# Heading\n\nYour post..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Tags (comma-separated)</Label>
-            <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="pqc, india, sebi" />
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" disabled={!title || create.isPending} onClick={() => create.mutate("draft")}>
+          <Field label="Tags" hint="Comma-separated.">
+            {({ id, describedBy }) => (
+              <div>
+                <Input id={id} value={d.tags} onChange={(e) => setD({ ...d, tags: e.target.value })} placeholder="pqc, india, sebi" aria-describedby={describedBy} />
+                {tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {tags.map((t) => (
+                      <Chip key={t}>{t}</Chip>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Field>
+          <div className="flex gap-2 border-t border-rule pt-5">
+            <Button type="submit" variant="secondary" disabled={!d.title.trim()} pending={save.isPending && save.variables === "draft"} pendingLabel="Saving">
               Save draft
             </Button>
-            <Button disabled={!title || create.isPending} onClick={() => create.mutate("published")}>
+            <Button type="button" disabled={!d.title.trim()} onClick={() => save.mutate("published")} pending={save.isPending && save.variables === "published"} pendingLabel="Publishing">
               Publish
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </form>
+      </Section>
 
-      <Card>
-        <CardHeader><CardTitle>All posts</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {(posts.data ?? []).length === 0 && <p className="text-sm text-muted-foreground">No posts yet.</p>}
-          {(posts.data ?? []).map((p: BlogPost) => (
-            <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <div className="font-medium">{p.title}</div>
-                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant={p.status === "published" ? "secondary" : "outline"}>{p.status}</Badge>
-                  <span>/{p.slug}</span>
+      <Section index="02" title="All posts">
+        {posts.isLoading ? (
+          <TableSkeleton cols={4} rows={3} />
+        ) : posts.isError ? (
+          <ErrorState message={errMsg(posts.error)} onRetry={() => posts.refetch()} />
+        ) : !posts.data?.length ? (
+          <EmptyState title="No posts yet" body="Write the first one above." />
+        ) : (
+          <ul className="border-t border-ink">
+            {posts.data.map((p) => (
+              <li key={p.id} className="grid gap-3 border-b border-rule py-4 md:grid-cols-[1fr_auto] md:items-center">
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-3">
+                    <span className="font-display text-xl text-ink">{p.title}</span>
+                    <StatusChip value={p.status} />
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] text-ink-3">
+                    /{p.slug} · <RelTime value={p.published_at ?? p.created_at} />
+                  </p>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                {p.status === "published" ? (
-                  <Button size="sm" variant="outline" onClick={() => update.mutate({ id: p.id, data: { status: "draft" } })}>
-                    Unpublish
+                <div className="flex flex-wrap gap-2">
+                  {p.status === "published" && (
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href={`/blog/${p.slug}`} target="_blank">
+                        View <IconExternal size={12} />
+                      </Link>
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setD({ id: p.id, title: p.title, excerpt: p.excerpt ?? "", body: p.body, tags: p.tags.join(", ") });
+                      window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+                    }}
+                  >
+                    Edit
                   </Button>
-                ) : (
-                  <Button size="sm" onClick={() => update.mutate({ id: p.id, data: { status: "published" } })}>
-                    Publish
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    pending={setStatus.isPending && setStatus.variables?.id === p.id}
+                    pendingLabel="Saving"
+                    onClick={() => setStatus.mutate({ id: p.id, status: p.status === "published" ? "draft" : "published" })}
+                  >
+                    {p.status === "published" ? "Unpublish" : "Publish"}
                   </Button>
-                )}
-                <Button size="sm" variant="destructive" onClick={() => del.mutate(p.id)}>Delete</Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    pending={del.isPending && del.variables === p.id}
+                    pendingLabel="Deleting"
+                    onClick={async () => {
+                      const ok = await confirm({ title: "Delete this post?", subject: p.title, body: "It is removed from the blog and cannot be recovered.", confirmLabel: "Delete post" });
+                      if (ok) del.mutate(p.id);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
     </div>
+  );
+}
+
+export default function AdminBlogPage() {
+  return (
+    <OperatorGate>
+      <Cms />
+    </OperatorGate>
   );
 }

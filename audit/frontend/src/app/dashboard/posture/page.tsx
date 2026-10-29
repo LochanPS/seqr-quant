@@ -1,79 +1,62 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Radar, Network, ShieldCheck, ShieldAlert, ListChecks, Package,
-  FileSignature, CheckCircle2, XCircle, PlayCircle, ScrollText, Boxes, GaugeCircle,
-  Download, FileText, Terminal,
-} from "lucide-react";
-import { api, type DryRun, type VerifyReport } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
+import { api, isStatus, type DryRun, type VerifyReport } from "@/lib/api";
+import { cn, errMsg, humanize, shortId } from "@/lib/utils";
+import { DEMO_TEMPLATES, SEV_ORDER, downloadBase64, frameworkLabel, plain, ruleLabel, slotOf } from "@/lib/domain";
 import { downloadWithAuth } from "@/lib/download";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState } from "@/components/shared/States";
+import { PageHeader, RelTime, Section } from "@/components/ui/page";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/field";
+import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm";
+import { BlockSkeleton, EmptyState, ErrorState, Notice, ReadoutSkeleton, Skeleton, TableSkeleton } from "@/components/ui/feedback";
+import { Chip, Stamp, StatusChip, Swatch, toneFor } from "@/components/ui/marks";
+import { CountUp, Readout, ReadoutStrip } from "@/components/ui/numbers";
+import { CodeBlock } from "@/components/ui/code";
+import { TBody, THead, Table, Td, Th, Tr, nextSort, sortRows } from "@/components/ui/table";
+import { Dial } from "@/components/viz/dial";
+import { StackStrip } from "@/components/viz/bars";
+import {
+  IconCertificate,
+  IconChevronDown,
+  IconChevronRight,
+  IconDownload,
+  IconPackage,
+  IconPlay,
+  IconSignature,
+  IconVerify,
+  IconPlus,
+} from "@/components/icons";
 
-const TEMPLATES = ["banking", "healthcare", "telecom", "government", "saas"] as const;
-const SEV_ORDER = ["immediate", "urgent", "planned"];
-const SEV: Record<string, string> = { immediate: "text-vulnerable", urgent: "text-urgent", planned: "text-planned" };
-function sevColor(s: string) { return SEV[s] ?? "text-muted-foreground"; }
-function statusColor(s: string | null) {
-  if (s === "hybrid" || s === "safe") return "text-safe";
-  if (s === "vulnerable") return "text-vulnerable";
-  return "text-muted-foreground";
-}
-function riskColor(label: string) {
-  const l = label.toLowerCase();
-  if (l === "low") return "text-safe";
-  if (l === "high" || l === "critical") return "text-vulnerable";
-  return "text-urgent";
-}
-function complianceColor(s: string) {
-  if (s === "PASS") return "bg-safe/15 text-safe";
-  if (s === "FAIL") return "bg-vulnerable/15 text-vulnerable";
-  if (s === "MONITOR") return "bg-muted text-muted-foreground";
-  return "bg-urgent/15 text-urgent";
-}
+const KEYS = [
+  "pipeline",
+  "compliance",
+  "violations-current",
+  "component-states",
+  "graph-assets",
+  "attestations",
+  "graph-events",
+  "context-risk",
+  "migration-plans",
+  "org",
+  "assets",
+  "cbom-summary",
+];
 
-// Plain-language names for policy rules — a CISO shouldn't have to read engine slugs.
-const RULE_LABEL: Record<string, string> = {
-  kex_must_be_hybrid: "Key exchange is not post-quantum hybrid",
-  no_static_rsa_kex: "Static RSA key exchange — no forward secrecy",
-  cert_min_rsa: "Certificate key below policy minimum",
-  no_exposed_classical_origin: "Classical origin exposed behind the CDN edge",
-};
-function ruleLabel(k: string) { return RULE_LABEL[k] ?? k; }
-function slotOf(rule: string) {
-  if (rule.includes("kex")) return "tls:kex";
-  if (rule.includes("cert")) return "tls:cert";
-  return "origin";
-}
-
-function ExecCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</CardTitle></CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-function Stage({ icon: Icon, label, value, tone, target }: { icon: React.ElementType; label: string; value: React.ReactNode; tone?: string; target: string }) {
-  return (
-    <button onClick={() => scrollTo(target)} className="flex min-w-[110px] flex-1 flex-col items-center gap-1 rounded-lg border bg-card/40 px-3 py-3 transition-colors hover:bg-accent">
-      <Icon className={`h-5 w-5 ${tone ?? "text-quantum"}`} />
-      <span className="text-lg font-semibold tabular-nums">{value}</span>
-      <span className="text-center text-[0.68rem] uppercase tracking-wide text-muted-foreground">{label}</span>
-    </button>
-  );
+function scrollToId(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 export default function PosturePage() {
   const qc = useQueryClient();
+  const toast = useToast();
+  const confirm = useConfirm();
   const pipeline = useQuery({ queryKey: ["pipeline"], queryFn: api.migration.pipeline });
   const compliance = useQuery({ queryKey: ["compliance"], queryFn: api.risk.compliance });
   const violations = useQuery({ queryKey: ["violations-current"], queryFn: api.graph.currentViolations });
@@ -81,382 +64,776 @@ export default function PosturePage() {
   const assets = useQuery({ queryKey: ["graph-assets"], queryFn: api.graph.assets });
   const attestations = useQuery({ queryKey: ["attestations"], queryFn: api.graph.attestations });
   const events = useQuery({ queryKey: ["graph-events"], queryFn: api.graph.events });
+  const plans = useQuery({ queryKey: ["migration-plans"], queryFn: api.migration.plans });
 
   const [dry, setDry] = useState<DryRun | null>(null);
-  const [verifyReport, setVerifyReport] = useState<VerifyReport | null>(null);
+  const [verify, setVerify] = useState<VerifyReport | null>(null);
+  const [bundle, setBundle] = useState<{ bundle_id: string; manifest: unknown; tar_base64: string } | null>(null);
   const [template, setTemplate] = useState<string>("banking");
-  // Demo template switching (reseed) is hidden — it would overwrite the org's real
-  // discovered/scanned data with a seeded template. Kept in code, not exposed in UI.
-  const [switcherUnavailable, setSwitcherUnavailable] = useState(true);
+  const [reseedHidden, setReseedHidden] = useState(false);
 
-  const invalidateAll = () =>
-    ["pipeline", "risk-score", "compliance", "violations-current", "component-states", "graph-assets", "attestations", "graph-events"]
-      .forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  const invalidateAll = () => KEYS.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  const fail = (title: string) => (e: unknown) => toast({ title, description: errMsg(e), tone: "error" });
 
-  const dryRun = useMutation({ mutationFn: api.migration.dryRun, onSuccess: setDry });
-  const createPlan = useMutation({ mutationFn: api.migration.createPlan, onSuccess: invalidateAll });
-  const genAttestation = useMutation({ mutationFn: api.graph.generateAttestation, onSuccess: invalidateAll });
-  const reseed = useMutation({
-    mutationFn: (t: string) => api.migration.reseed(t),
-    onSuccess: () => { setDry(null); setVerifyReport(null); invalidateAll(); },
-    onError: () => setSwitcherUnavailable(true),
+  const dryRun = useMutation({
+    mutationFn: api.migration.dryRun,
+    onSuccess: (r) => {
+      setDry(r);
+      toast({ title: `Dry-run found ${r.change_count} change${r.change_count === 1 ? "" : "s"}`, tone: "success" });
+    },
+    onError: fail("Dry-run failed"),
+  });
+  const createPlan = useMutation({
+    mutationFn: api.migration.createPlan,
+    onSuccess: (p) => {
+      invalidateAll();
+      toast({ title: "Plan created", description: `Plan ${shortId(p.id)} is ${humanize(p.status)}.`, tone: "success" });
+    },
+    onError: fail("Could not create a plan"),
   });
   const verifyLatest = useMutation({
     mutationFn: async () => {
-      const plans = await api.migration.plans();
-      if (!plans.length) throw new Error("No plan yet — create one first.");
-      return api.migration.verify(plans[0].id);
+      const list = await api.migration.plans();
+      if (!list.length) throw new Error("There is no plan yet. Create one first.");
+      return api.migration.verify(list[0].id);
     },
-    onSuccess: (r) => { setVerifyReport(r); invalidateAll(); },
+    onSuccess: (r) => {
+      setVerify(r);
+      invalidateAll();
+      toast({ title: r.converged ? "Plan converged" : "Plan not converged yet", tone: r.converged ? "success" : "neutral" });
+    },
+    onError: fail("Verification failed"),
+  });
+  const buildBundle = useMutation({
+    mutationFn: async () => {
+      const list = await api.migration.plans();
+      if (!list.length) throw new Error("There is no plan yet. Create one first.");
+      return api.migration.bundle(list[0].id);
+    },
+    onSuccess: (b) => {
+      setBundle(b);
+      invalidateAll();
+      toast({ title: "Change bundle built", description: `Bundle ${shortId(b.bundle_id)} is ready to download.`, tone: "success" });
+    },
+    onError: fail("Could not build the bundle"),
+  });
+  const attest = useMutation({
+    mutationFn: api.graph.generateAttestation,
+    onSuccess: () => {
+      invalidateAll();
+      toast({ title: "Attestation signed", tone: "success" });
+    },
+    onError: fail("Attestation failed"),
+  });
+  const reseed = useMutation({
+    mutationFn: (t: string) => api.migration.reseed(t),
+    onSuccess: (r) => {
+      setDry(null);
+      setVerify(null);
+      setBundle(null);
+      qc.invalidateQueries();
+      toast({ title: `Loaded the ${r.template} dataset`, tone: "success" });
+    },
+    onError: (e) => {
+      if (isStatus(e, 403, 404)) {
+        setReseedHidden(true);
+        toast({ title: "Demo datasets are turned off on this deployment", tone: "neutral" });
+      } else fail("Could not load the dataset")(e);
+    },
   });
 
   const p = pipeline.data;
-  const findings = useMemo(() => {
-    const v = violations.data ?? [];
+  const risk = useMemo(() => {
     const c = { immediate: 0, urgent: 0, planned: 0 };
-    v.forEach((x) => { const k = x.severity as keyof typeof c; if (c[k] !== undefined) c[k]++; });
+    (violations.data ?? []).forEach((v) => {
+      if (v.severity in c) c[v.severity as keyof typeof c]++;
+    });
+    const score = Math.min(100, c.immediate * 18 + c.urgent * 9 + c.planned * 3);
     const level = c.immediate ? "High" : c.urgent ? "Elevated" : c.planned ? "Moderate" : "Low";
-    const tone = c.immediate ? "text-vulnerable" : c.urgent ? "text-urgent" : c.planned ? "text-planned" : "text-safe";
-    return { ...c, level, tone, total: v.length };
+    const tone = c.immediate ? "immediate" : c.urgent ? "urgent" : c.planned ? "planned" : "safe";
+    return { ...c, score, level, tone: tone as "immediate" | "urgent" | "planned" | "safe", total: (violations.data ?? []).length };
   }, [violations.data]);
-  const complianceStats = useMemo(() => {
-    const m = compliance.data ?? {};
-    const entries = Object.entries(m);
-    const pass = entries.filter(([, v]) => v.status === "PASS").length;
-    return { pass, total: entries.length, entries };
+
+  const comp = useMemo(() => {
+    const entries = Object.entries(compliance.data ?? {});
+    const by = (s: string) => entries.filter(([, v]) => v.status === s).length;
+    return { entries, pass: by("PASS"), fail: by("FAIL"), partial: by("PARTIAL"), monitor: by("MONITOR"), planned: by("PLANNED") };
   }, [compliance.data]);
 
-  const remediation = useMemo(() => {
-    const totalSlots = states.data?.length ?? 0;
+  const coverage = useMemo(() => {
+    const total = states.data?.length ?? 0;
     const violating = new Set((violations.data ?? []).map((v) => `${v.asset_id}:${slotOf(v.rule_key)}`)).size;
-    const pct = totalSlots ? Math.round(((totalSlots - Math.min(violating, totalSlots)) / totalSlots) * 100) : 0;
-    return { totalSlots, violating, pct };
+    const pct = total ? Math.round(((total - Math.min(violating, total)) / total) * 100) : 0;
+    return { total, violating, pct };
   }, [states.data, violations.data]);
 
-  const sortedViolations = useMemo(
-    () => [...(violations.data ?? [])].sort((a, b) => SEV_ORDER.indexOf(a.severity) - SEV_ORDER.indexOf(b.severity)),
-    [violations.data]
-  );
+  const assetName = useMemo(() => {
+    const m = new Map<string, string>();
+    (assets.data ?? []).forEach((a) => m.set(a.id, a.name || a.identifier));
+    return (id: string) => m.get(id) ?? shortId(id);
+  }, [assets.data]);
 
-  if (pipeline.isError) return <ErrorState message={(pipeline.error as Error)?.message} onRetry={() => pipeline.refetch()} />;
+  if (pipeline.isError && !isStatus(pipeline.error, 404))
+    return <ErrorState message={errMsg(pipeline.error)} onRetry={() => pipeline.refetch()} />;
 
   return (
-    <div className="space-y-6">
-      {/* Header + template switcher */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Cryptographic Posture</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Your organisation&apos;s quantum-readiness across every asset — from discovery to verified migration.</p>
-        </div>
-        {!switcherUnavailable && (
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground">Demo dataset</label>
-            <select
-              value={template}
-              disabled={reseed.isPending}
-              onChange={(e) => { setTemplate(e.target.value); reseed.mutate(e.target.value); }}
-              className="rounded-lg border bg-card px-3 py-1.5 text-sm capitalize"
-            >
-              {TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            {reseed.isPending && <span className="text-xs text-muted-foreground">loading…</span>}
-          </div>
-        )}
-      </div>
-
-      {/* Executive summary */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ExecCard title="Quantum Risk">
-          {violations.isLoading ? <Skeleton className="h-14 w-full" /> : (
+    <div className="space-y-14">
+      <PageHeader
+        eyebrow="Overview"
+        title="Cryptographic posture"
+        description="Your organisation's quantum readiness across every asset, from discovery to a verified, signed migration."
+        actions={
+          !reseedHidden && (
             <div className="flex items-end gap-2">
-              <span className={`text-4xl font-bold ${findings.tone}`}>{findings.level}</span>
+              <label className="block">
+                <span className="eyebrow mb-1.5 block">Demo dataset</span>
+                <Select
+                  value={template}
+                  disabled={reseed.isPending}
+                  onChange={async (e) => {
+                    const t = e.target.value;
+                    const ok = await confirm({
+                      title: "Replace the workspace data?",
+                      subject: `${t} template`,
+                      body: "This reloads the organisation with the demo dataset. Current assets, plans and attestations are replaced.",
+                      confirmLabel: "Load dataset",
+                      tone: "primary",
+                    });
+                    if (!ok) return;
+                    setTemplate(t);
+                    reseed.mutate(t);
+                  }}
+                  className="w-44 capitalize"
+                  aria-label="Demo dataset"
+                >
+                  {DEMO_TEMPLATES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              {reseed.isPending && <span className="pb-3 font-mono text-[11px] text-ink-3">Loading</span>}
             </div>
-          )}
-          <p className="mt-1 text-xs text-muted-foreground">{findings.total} open findings · {findings.immediate} immediate · {findings.urgent} urgent</p>
-        </ExecCard>
+          )
+        }
+      />
 
-        <ExecCard title="Compliance">
-          {compliance.isLoading ? <Skeleton className="h-14 w-full" /> : (
-            <>
-              <div className="flex items-end gap-1">
-                <span className="text-4xl font-bold tabular-nums">{complianceStats.pass}</span>
-                <span className="mb-1 text-sm text-muted-foreground">/ {complianceStats.total} frameworks pass</span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {complianceStats.entries.slice(0, 5).map(([k, v]) => (
-                  <span key={k} className={`rounded px-1.5 py-0.5 text-[0.6rem] font-medium ${complianceColor(v.status)}`}>{k.split("_")[0]}</span>
-                ))}
-              </div>
-            </>
-          )}
-        </ExecCard>
-
-        <ExecCard title="Remediation coverage">
-          {states.isLoading ? <Skeleton className="h-14 w-full" /> : (
-            <>
-              <div className="flex items-end gap-2">
-                <span className={`text-4xl font-bold tabular-nums ${remediation.pct === 100 ? "text-safe" : "text-urgent"}`}>{remediation.pct}%</span>
-              </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-accent">
-                <div className={`h-full rounded-full ${remediation.pct === 100 ? "bg-safe" : "bg-urgent"}`} style={{ width: `${remediation.pct}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{remediation.violating} of {remediation.totalSlots} slots need work</p>
-            </>
-          )}
-        </ExecCard>
-
-        <ExecCard title="Migration status">
-          {pipeline.isLoading || !p ? <Skeleton className="h-14 w-full" /> : (
-            <>
-              <div className={`flex items-center gap-2 text-lg font-semibold ${p.converged ? "text-safe" : "text-urgent"}`}>
-                {p.converged ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
-                {p.converged ? "Converged" : `${p.open_violations} open`}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                plans {p.plans.total} · bundles {p.bundles} · attestations {p.attestations}
+      {/* Executive strip */}
+      {violations.isLoading || compliance.isLoading || states.isLoading || pipeline.isLoading ? (
+        <ReadoutSkeleton />
+      ) : (
+        <ReadoutStrip cols={4}>
+          <div className="flex items-center gap-4 p-5">
+            <Dial value={risk.score} label="Quantum risk" tone={risk.tone} size={120} />
+            <div>
+              <p className="eyebrow">Quantum risk</p>
+              <p
+                className={cn(
+                  "mt-2 font-display text-[2rem] leading-none",
+                  { immediate: "text-immediate", urgent: "text-urgent", planned: "text-planned", safe: "text-safe" }[risk.tone]
+                )}
+              >
+                {risk.level}
               </p>
-            </>
-          )}
-        </ExecCard>
-      </div>
-
-      {/* Lifecycle stage strip (clickable) */}
-      {pipeline.isLoading || !p ? <Skeleton className="h-24 w-full" /> : (
-        <div className="flex flex-wrap gap-2">
-          <Stage icon={Boxes} label="Assets" value={p.assets.total} target="sec-assets" />
-          <Stage icon={Network} label="Graph edges" value={p.edges} target="sec-assets" />
-          <Stage icon={ListChecks} label="State slots" value={p.component_states.total} target="sec-state" />
-          <Stage icon={ShieldAlert} label="Violations" value={p.open_violations} tone={p.open_violations ? "text-vulnerable" : "text-safe"} target="sec-violations" />
-          <Stage icon={GaugeCircle} label="Plans" value={p.plans.total} target="sec-actions" />
-          <Stage icon={Package} label="Bundles" value={p.bundles} target="sec-actions" />
-          <Stage icon={FileSignature} label="Attestations" value={p.attestations} target="sec-attest" />
-        </div>
-      )}
-
-      {/* Migration actions */}
-      <Card id="sec-actions">
-        <CardHeader><CardTitle className="text-base">Migration lifecycle</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => dryRun.mutate()} disabled={dryRun.isPending} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"><PlayCircle className="h-4 w-4" /> Dry-run</button>
-            <button onClick={() => createPlan.mutate()} disabled={createPlan.isPending} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"><ListChecks className="h-4 w-4" /> Create plan</button>
-            <button onClick={() => verifyLatest.mutate()} disabled={verifyLatest.isPending} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"><CheckCircle2 className="h-4 w-4" /> Verify latest plan</button>
-            <button onClick={() => genAttestation.mutate()} disabled={genAttestation.isPending} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"><FileSignature className="h-4 w-4" /> Generate attestation</button>
-          </div>
-          {(createPlan.isError || verifyLatest.isError || dryRun.isError) && (
-            <p className="text-sm text-vulnerable">{((createPlan.error || verifyLatest.error || dryRun.error) as Error)?.message}</p>
-          )}
-          {verifyReport && (
-            <p className={`text-sm ${verifyReport.converged ? "text-safe" : "text-urgent"}`}>Verify: converged={String(verifyReport.converged)} · cleared {verifyReport.cleared.length} · remaining {verifyReport.remaining.length}</p>
-          )}
-          {dry && (
-            <div className="rounded-lg border bg-card/40 p-3">
-              <p className="text-sm font-medium">Dry-run — {dry.change_count} changes ({Object.entries(dry.by_platform).map(([k, v]) => `${k}:${v}`).join(", ")})</p>
-              <div className="mt-2 max-h-64 space-y-2 overflow-auto">
-                {dry.changes.map((c, i) => (
-                  <div key={i} className="rounded border p-2 text-xs">
-                    <span className="font-mono text-urgent">{c.action}</span> · {c.provider} · {c.slot ?? "-"} · {c.from ?? "?"} → {c.to ?? "?"}
-                    {c.snippets.map((sn, j) => <pre key={j} className="mt-1 overflow-auto rounded bg-background p-2 text-[0.7rem] leading-relaxed">{sn}</pre>)}
-                  </div>
-                ))}
-              </div>
+              <p className="mt-2 text-xs text-ink-3">
+                {risk.total} open · {risk.immediate} immediate · {risk.urgent} urgent
+              </p>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <ContextRiskCard />
-
-      {/* Violations + state */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card id="sec-violations">
-          <CardHeader><CardTitle className="text-base">Open violations (by severity)</CardTitle></CardHeader>
-          <CardContent>
-            {violations.isLoading ? <Skeleton className="h-32 w-full" /> :
-              violations.isError ? <p className="text-sm text-vulnerable">Failed to load.</p> :
-              sortedViolations.length === 0 ? <p className="text-sm text-safe">Policy satisfied — no open violations.</p> : (
-              <div className="space-y-2 text-sm">
-                {sortedViolations.map((v) => (
-                  <div key={v.id} className="border-b pb-2">
-                    <span className={`font-mono text-xs font-semibold uppercase ${sevColor(v.severity)}`}>{v.severity}</span>
-                    <p className="font-medium">{ruleLabel(v.rule_key)}</p>
-                    <p className="text-xs text-muted-foreground">{v.actual} → {v.target_state}</p>
-                    <p className="mt-0.5 font-mono text-[0.6rem] text-muted-foreground/70">{v.rule_key}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card id="sec-state">
-          <CardHeader><CardTitle className="text-base">Component state (current)</CardTitle></CardHeader>
-          <CardContent>
-            {states.isLoading ? <Skeleton className="h-32 w-full" /> :
-              (states.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No state yet.</p> : (
-              <div className="max-h-72 space-y-1 overflow-auto text-sm">
-                {(states.data ?? []).map((st) => (
-                  <div key={st.id} className="flex items-center justify-between gap-2 border-b py-1">
-                    <span className="font-mono text-xs">{st.slot_key}</span>
-                    <span className={`font-mono text-xs ${statusColor(st.quantum_status)}`}>{st.algorithm ?? "?"}</span>
-                    <span className="text-[0.7rem] text-muted-foreground">{st.source}{st.conflict ? " ⚠ conflict" : ""}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Assets + attestations */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card id="sec-assets">
-          <CardHeader><CardTitle className="text-base">Assets ({assets.data?.length ?? 0})</CardTitle></CardHeader>
-          <CardContent>
-            {assets.isLoading ? <Skeleton className="h-32 w-full" /> :
-              (assets.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No assets.</p> : (
-              <div className="max-h-72 space-y-1 overflow-auto text-sm">
-                {(assets.data ?? []).map((a) => (
-                  <div key={a.id} className="flex items-center justify-between gap-2 border-b py-1">
-                    <span className="truncate font-medium">{a.identifier}</span>
-                    <span className="rounded bg-accent px-1.5 py-0.5 text-[0.6rem] uppercase text-muted-foreground">{a.type}</span>
-                    <span className="text-[0.6rem] text-muted-foreground">{a.provenance}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card id="sec-attest">
-          <CardHeader><CardTitle className="text-base">Attestations</CardTitle></CardHeader>
-          <CardContent>
-            {attestations.isLoading ? <Skeleton className="h-32 w-full" /> :
-              (attestations.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">None yet — generate one above.</p> : (
-              <div className="max-h-72 space-y-2 overflow-auto text-sm">
-                {(attestations.data ?? []).map((at) => (
-                  <div key={at.id} className="border-b pb-2">
-                    <p className="font-mono text-xs">{at.key_id}</p>
-                    <p className="text-[0.7rem] text-muted-foreground">policy v{at.policy_version} · schema v{at.graph_schema_version} · {new Date(at.created_at).toLocaleString()}</p>
-                    <p className="truncate font-mono text-[0.6rem] text-muted-foreground">sig {at.signature.slice(0, 40)}…</p>
-                    <div className="mt-1.5 flex gap-2">
-                      <button
-                        onClick={() => downloadWithAuth(api.graph.attestationCertUrl(at.id), `seqr-attestation-${at.id}.pdf`)}
-                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[0.7rem] font-medium hover:bg-accent"
-                      >
-                        <FileText className="h-3 w-3" /> Certificate (PDF)
-                      </button>
-                      <button
-                        onClick={() => downloadWithAuth(api.graph.attestationDownloadUrl(at.id), `seqr-attestation-${at.id}.json`)}
-                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[0.7rem] font-medium hover:bg-accent"
-                      >
-                        <Download className="h-3 w-3" /> Signed JSON
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {(attestations.data ?? []).length > 0 && (
-              <div className="mt-3 rounded-lg border bg-muted/40 p-3">
-                <p className="flex items-center gap-1.5 text-xs font-medium"><Terminal className="h-3.5 w-3.5" /> Verify offline (air-gapped)</p>
-                <p className="mt-1 text-[0.7rem] text-muted-foreground">
-                  Anyone can confirm a certificate is authentic and untampered with no callback to SeQr:
-                </p>
-                <pre className="mt-1.5 overflow-x-auto rounded bg-background px-2 py-1.5 font-mono text-[0.7rem]">seqr verify-attestation seqr-attestation-&lt;id&gt;.json</pre>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Audit trail */}
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><ScrollText className="h-4 w-4" /> Audit trail</CardTitle></CardHeader>
-        <CardContent>
-          {events.isLoading ? <Skeleton className="h-24 w-full" /> :
-            (events.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No events.</p> : (
-            <div className="max-h-64 space-y-1 overflow-auto font-mono text-xs">
-              {(events.data ?? []).map((e) => (
-                <div key={e.id} className="flex items-center gap-3 border-b py-1">
-                  <span className="text-muted-foreground">{e.at ? new Date(e.at).toLocaleTimeString() : ""}</span>
-                  <span className="font-semibold text-quantum">{e.type}</span>
-                  <span className="truncate text-muted-foreground">{e.actor?.slice(0, 8)}</span>
-                </div>
+          </div>
+          <div className="p-5">
+            <p className="eyebrow">Compliance</p>
+            <p className="mt-2 font-display text-[2.4rem] leading-none tabular">
+              <CountUp value={comp.pass} />
+              <span className="ml-1 text-base text-ink-3">/ {comp.entries.length} pass</span>
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1">
+              {comp.entries.map(([k, v]) => (
+                <Chip key={k} tone={toneFor(v.status)}>
+                  {frameworkLabel(k)}
+                </Chip>
               ))}
             </div>
+          </div>
+          <Readout
+            label="Remediation coverage"
+            value={<CountUp value={coverage.pct} suffix="%" />}
+            tone={coverage.pct === 100 ? "safe" : "urgent"}
+            foot={`${coverage.violating} of ${coverage.total} state slots need work`}
+          />
+          <div className="p-5">
+            <p className="eyebrow">Migration status</p>
+            <div className="mt-3">
+              {p?.converged ? (
+                <Stamp tone="safe" value="converged">
+                  Converged
+                </Stamp>
+              ) : (
+                <Stamp tone="urgent" value={p?.open_violations}>
+                  {p?.open_violations ?? 0} open
+                </Stamp>
+              )}
+            </div>
+            <p className="mt-3 text-xs text-ink-3">
+              {p?.plans.total ?? 0} plans · {p?.bundles ?? 0} bundles · {p?.attestations ?? 0} attestations
+            </p>
+          </div>
+        </ReadoutStrip>
+      )}
+
+      {/* Pipeline ledger */}
+      <Section index="01" title="Pipeline" description="Each stage of the spine, from inventory to signed attestation. Select a stage to jump to it.">
+        {pipeline.isLoading || !p ? (
+          <Skeleton className="h-20 w-full" />
+        ) : (
+          <ol className="grid grid-cols-2 gap-px border-y border-ink bg-rule sm:grid-cols-4 lg:grid-cols-7 [&>li]:bg-bg">
+            {[
+              { label: "Assets", value: p.assets.total, target: "sec-assets" },
+              { label: "Graph edges", value: p.edges, target: "sec-assets" },
+              { label: "State slots", value: p.component_states.total, target: "sec-state" },
+              { label: "Violations", value: p.open_violations, target: "sec-violations", tone: p.open_violations ? "text-immediate" : "text-safe" },
+              { label: "Plans", value: p.plans.total, target: "sec-actions" },
+              { label: "Bundles", value: p.bundles, target: "sec-actions" },
+              { label: "Attestations", value: p.attestations, target: "sec-attest" },
+            ].map((s, i) => (
+              <li key={s.label}>
+                <button
+                  onClick={() => scrollToId(s.target)}
+                  className="group flex w-full flex-col items-start gap-1 px-4 py-4 text-left transition-colors duration-micro hover:bg-surface"
+                >
+                  <span className="font-mono text-[10px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+                  <span className={cn("font-display text-3xl leading-none tabular", s.tone ?? "text-ink")}>
+                    <CountUp value={s.value} />
+                  </span>
+                  <span className="text-xs text-ink-2 group-hover:text-ink">{s.label}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Section>
+
+      {/* Migration lifecycle */}
+      <Section
+        id="sec-actions"
+        index="02"
+        title="Migration lifecycle"
+        description="Preview the change set, commit a plan, build the signed bundle, verify convergence, then attest."
+      >
+        <div className="flex flex-wrap gap-2 border-y border-rule py-4">
+          <Button variant="secondary" onClick={() => dryRun.mutate()} pending={dryRun.isPending} pendingLabel="Running dry-run">
+            <IconPlay size={16} /> Dry-run
+          </Button>
+          <Button variant="secondary" onClick={() => createPlan.mutate()} pending={createPlan.isPending} pendingLabel="Creating plan">
+            <IconPlus size={16} /> Create plan
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => buildBundle.mutate()}
+            pending={buildBundle.isPending}
+            pendingLabel="Building bundle"
+            disabled={!plans.data?.length}
+          >
+            <IconPackage size={16} /> Build bundle
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => verifyLatest.mutate()}
+            pending={verifyLatest.isPending}
+            pendingLabel="Verifying"
+            disabled={!plans.data?.length}
+          >
+            <IconVerify size={16} /> Verify latest plan
+          </Button>
+          <Button onClick={() => attest.mutate()} pending={attest.isPending} pendingLabel="Signing">
+            <IconSignature size={16} /> Generate attestation
+          </Button>
+          {!plans.isLoading && !plans.data?.length && (
+            <p className="w-full pt-1 text-xs text-ink-3">Bundle and verify need a plan. Create one first.</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {verify && (
+          <div className="mt-6 flex flex-wrap items-center gap-4 border-b border-rule pb-6">
+            <Stamp tone={verify.converged ? "safe" : "urgent"} value={verify.new_evaluation_id}>
+              {verify.converged ? "Converged" : "Not converged"}
+            </Stamp>
+            <p className="text-sm text-ink-2">
+              Plan {shortId(verify.plan_id)} · cleared <span className="font-mono text-ink">{verify.cleared.length}</span> · remaining{" "}
+              <span className="font-mono text-ink">{verify.remaining.length}</span>
+            </p>
+          </div>
+        )}
+
+        {bundle && (
+          <div className="mt-6 grid gap-4 border-b border-rule pb-6 lg:grid-cols-[1fr_auto] lg:items-start">
+            <CodeBlock code={JSON.stringify(bundle.manifest, null, 2)} filename={`bundle ${shortId(bundle.bundle_id)} manifest.json`} maxHeight={260} />
+            <Button variant="secondary" onClick={() => downloadBase64(bundle.tar_base64, `seqr-bundle-${shortId(bundle.bundle_id)}.tar.gz`)}>
+              <IconDownload size={16} /> Download .tar.gz
+            </Button>
+          </div>
+        )}
+
+        {dry && (
+          <div className="mt-6">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <p className="font-display text-xl text-ink">
+                {dry.change_count} change{dry.change_count === 1 ? "" : "s"} proposed
+              </p>
+              {Object.entries(dry.by_platform).map(([k, v]) => (
+                <Chip key={k}>
+                  {k} {v}
+                </Chip>
+              ))}
+              <button onClick={() => setDry(null)} className="ml-auto text-sm text-ink-2 link-underline">
+                Clear preview
+              </button>
+            </div>
+            <ol className="mt-4 border-t border-ink">
+              {dry.changes.map((c, i) => (
+                <li key={i} className="grid gap-3 border-b border-rule py-4 lg:grid-cols-[220px_1fr]">
+                  <div>
+                    <p className="font-mono text-[11px] text-ink-3">{String(i + 1).padStart(2, "0")}</p>
+                    <p className="mt-1 font-mono text-sm text-urgent">{c.action}</p>
+                    <p className="mt-1 text-xs text-ink-2">
+                      {c.provider} · {c.slot ?? "no slot"}
+                    </p>
+                    <p className="mt-2 font-mono text-xs text-ink">
+                      {c.from ?? "?"} <span className="text-ink-3">to</span> {c.to ?? "?"}
+                    </p>
+                    {c.manual && <Chip tone="urgent" className="mt-2">manual step</Chip>}
+                  </div>
+                  <div className="min-w-0 space-y-2">
+                    {c.snippets.map((sn, j) => (
+                      <CodeBlock key={j} code={sn} filename={`${c.provider} snippet ${j + 1}`} maxHeight={220} />
+                    ))}
+                    {c.validation.length > 0 && (
+                      <p className="text-xs text-ink-2">
+                        <span className="eyebrow mr-2">Validate</span>
+                        {c.validation.join(" · ")}
+                      </p>
+                    )}
+                    {c.rollback.length > 0 && (
+                      <p className="text-xs text-ink-2">
+                        <span className="eyebrow mr-2">Rollback</span>
+                        {c.rollback.join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </Section>
+
+      <ContextRisk index="03" assetName={assetName} />
+
+      {/* Violations */}
+      <Section id="sec-violations" index="04" title="Open violations" description="Policy breaches from the latest evaluation, worst first.">
+        <ViolationsTable
+          loading={violations.isLoading}
+          error={violations.isError ? errMsg(violations.error) : null}
+          onRetry={() => violations.refetch()}
+          rows={violations.data ?? []}
+          assetName={assetName}
+        />
+      </Section>
+
+      {/* Component state */}
+      <Section id="sec-state" index="05" title="Component state" description="The winning observation for every cryptographic slot, by asset.">
+        {states.isLoading ? (
+          <TableSkeleton cols={6} />
+        ) : states.isError ? (
+          <ErrorState message={errMsg(states.error)} onRetry={() => states.refetch()} />
+        ) : !states.data?.length ? (
+          <EmptyState title="No state yet" body="Add an asset and scan it, or connect a discovery agent." action={{ label: "Add an asset", href: "/dashboard/assets?new=1" }} />
+        ) : (
+          <>
+            <StackStrip
+              className="mb-6"
+              parts={[
+                { label: "Vulnerable", value: states.data.filter((s) => s.quantum_status === "vulnerable").length, tone: "immediate" },
+                { label: "Hybrid", value: states.data.filter((s) => s.quantum_status === "hybrid").length, tone: "hybrid" },
+                { label: "Safe", value: states.data.filter((s) => s.quantum_status === "safe").length, tone: "safe" },
+                { label: "Unknown", value: states.data.filter((s) => !["vulnerable", "hybrid", "safe"].includes(s.quantum_status ?? "")).length, tone: "neutral" },
+              ]}
+            />
+            <Table>
+              <THead>
+                <tr>
+                  <Th>Asset</Th>
+                  <Th>Slot</Th>
+                  <Th>Algorithm</Th>
+                  <Th>Family</Th>
+                  <Th>Quantum</Th>
+                  <Th>Source</Th>
+                </tr>
+              </THead>
+              <TBody>
+                {states.data.map((s) => (
+                  <Tr key={s.id}>
+                    <Td label="Asset">
+                      <Link href={`/dashboard/assets/${s.asset_id}`} className="text-ink link-underline">
+                        {assetName(s.asset_id)}
+                      </Link>
+                    </Td>
+                    <Td label="Slot" mono>
+                      {s.slot_key}
+                      {s.conflict && <Chip tone="urgent" className="ml-2">conflict</Chip>}
+                    </Td>
+                    <Td label="Algorithm" mono>
+                      {s.algorithm ?? "n/a"}
+                    </Td>
+                    <Td label="Family" mono>
+                      {s.algorithm_family ?? "n/a"}
+                    </Td>
+                    <Td label="Quantum">
+                      <StatusChip value={s.quantum_status} />
+                    </Td>
+                    <Td label="Source" mono className="text-ink-2">
+                      {humanize(s.source)}
+                    </Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </Table>
+          </>
+        )}
+      </Section>
+
+      {/* Assets */}
+      <Section
+        id="sec-assets"
+        index="06"
+        title="Assets in the graph"
+        description={p ? `${p.assets.total} assets, ${p.edges} edges. ${Object.entries(p.assets.by_provenance).map(([k, v]) => `${v} ${humanize(k)}`).join(", ")}.` : undefined}
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/dashboard/graph">
+              Open the graph <IconChevronRight size={14} />
+            </Link>
+          </Button>
+        }
+      >
+        {assets.isLoading ? (
+          <TableSkeleton cols={4} rows={4} />
+        ) : assets.isError ? (
+          <ErrorState message={errMsg(assets.error)} onRetry={() => assets.refetch()} />
+        ) : !assets.data?.length ? (
+          <EmptyState title="No assets" action={{ label: "Add an asset", href: "/dashboard/assets?new=1" }} />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <Th>Name</Th>
+                <Th>Type</Th>
+                <Th>Provenance</Th>
+                <Th>Status</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {assets.data.map((a) => (
+                <Tr key={a.id}>
+                  <Td label="Name">
+                    <Link href={`/dashboard/assets/${a.id}`} className="text-ink link-underline">
+                      {a.name || a.identifier}
+                    </Link>
+                    {a.name && a.name !== a.identifier && <span className="ml-2 font-mono text-xs text-ink-3">{a.identifier}</span>}
+                  </Td>
+                  <Td label="Type" mono>
+                    {humanize(a.type)}
+                  </Td>
+                  <Td label="Provenance" mono className="text-ink-2">
+                    {humanize(a.provenance)}
+                  </Td>
+                  <Td label="Status">
+                    <StatusChip value={a.status} />
+                  </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </Section>
+
+      {/* Attestations */}
+      <Section id="sec-attest" index="07" title="Attestations" description="Signed posture snapshots. Each binds the policy version, the evaluation result and the graph schema.">
+        {attestations.isLoading ? (
+          <TableSkeleton cols={4} rows={3} />
+        ) : attestations.isError ? (
+          <ErrorState message={errMsg(attestations.error)} onRetry={() => attestations.refetch()} />
+        ) : !attestations.data?.length ? (
+          <EmptyState title="Nothing attested yet" body="Generate an attestation to sign the current posture." action={{ label: "Generate attestation", onClick: () => attest.mutate() }} />
+        ) : (
+          <ul className="border-t border-ink">
+            {attestations.data.map((at) => (
+              <li key={at.id} className="grid gap-3 border-b border-rule py-4 md:grid-cols-[1fr_auto] md:items-center">
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-3">
+                    <span className="font-mono text-sm text-ink">{shortId(at.id, 12)}</span>
+                    <Chip>policy {at.policy_version}</Chip>
+                    <Chip>schema v{at.graph_schema_version}</Chip>
+                    <RelTime value={at.created_at} className="text-xs text-ink-3" />
+                  </p>
+                  <p className="mt-1 truncate font-mono text-[11px] text-ink-3">
+                    key {at.key_id} · result {at.evaluation_result_hash.slice(0, 24)}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <DownloadButton url={api.graph.attestationCertUrl(at.id)} filename={`seqr-attestation-${shortId(at.id)}.pdf`} label="Certificate (PDF)" icon />
+                  <DownloadButton url={api.graph.attestationDownloadUrl(at.id)} filename={`seqr-attestation-${shortId(at.id)}.json`} label="Raw JSON" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      {/* Events */}
+      <Section id="sec-events" index="08" title="Event timeline" description="Everything the spine recorded, newest first.">
+        {events.isLoading ? (
+          <BlockSkeleton lines={6} />
+        ) : events.isError ? (
+          <ErrorState message={errMsg(events.error)} onRetry={() => events.refetch()} />
+        ) : !events.data?.length ? (
+          <EmptyState title="No events yet" />
+        ) : (
+          <EventTimeline events={events.data} assetName={assetName} />
+        )}
+      </Section>
     </div>
   );
 }
 
-const TIER_BADGE: Record<string, "vulnerable" | "urgent" | "planned" | "muted"> = {
-  IMMEDIATE: "vulnerable",
-  URGENT: "urgent",
-  PLANNED: "planned",
-  MONITOR: "muted",
-};
+function DownloadButton({ url, filename, label, icon }: { url: string; filename: string; label: string; icon?: boolean }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      variant="secondary"
+      size="sm"
+      pending={busy}
+      pendingLabel="Downloading"
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await downloadWithAuth(url, filename);
+        } catch (e) {
+          toast({ title: "Download failed", description: errMsg(e), tone: "error" });
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {icon ? <IconCertificate size={14} /> : <IconDownload size={14} />} {label}
+    </Button>
+  );
+}
 
-function ContextRiskCard() {
+function ViolationsTable({
+  loading,
+  error,
+  onRetry,
+  rows,
+  assetName,
+}: {
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  rows: { id: string; asset_id: string; rule_key: string; severity: string; actual: string | null; target_state: string | null }[];
+  assetName: (id: string) => string;
+}) {
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>({ key: "severity", dir: "asc" });
+  if (loading) return <TableSkeleton cols={4} rows={4} />;
+  if (error) return <ErrorState message={error} onRetry={onRetry} />;
+  if (!rows.length) return <Notice title="No open violations">The latest evaluation found nothing out of policy.</Notice>;
+  const sorted = sortRows(rows, sort, (r, k) =>
+    k === "severity" ? SEV_ORDER.indexOf(r.severity as (typeof SEV_ORDER)[number]) : k === "asset" ? assetName(r.asset_id) : (r as Record<string, unknown>)[k]
+  );
+  const counts = SEV_ORDER.map((s) => ({ s, n: rows.filter((r) => r.severity === s).length }));
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap gap-4">
+        {counts.map(({ s, n }) => (
+          <span key={s} className="inline-flex items-center gap-2 font-mono text-xs text-ink-2">
+            <Swatch tone={toneFor(s)} /> {s} <span className="text-ink tabular">{n}</span>
+          </span>
+        ))}
+      </div>
+      <Table>
+        <THead>
+          <tr>
+            <Th sort={sort?.key === "severity" ? sort.dir : null} onSort={() => setSort(nextSort(sort, "severity"))}>
+              Severity
+            </Th>
+            <Th sort={sort?.key === "rule_key" ? sort.dir : null} onSort={() => setSort(nextSort(sort, "rule_key"))}>
+              Rule
+            </Th>
+            <Th sort={sort?.key === "asset" ? sort.dir : null} onSort={() => setSort(nextSort(sort, "asset"))}>
+              Asset
+            </Th>
+            <Th>Actual, then target</Th>
+          </tr>
+        </THead>
+        <TBody>
+          {sorted.map((v) => (
+            <Tr key={v.id}>
+              <Td label="Severity">
+                <StatusChip value={v.severity} />
+              </Td>
+              <Td label="Rule">{ruleLabel(v.rule_key)}</Td>
+              <Td label="Asset">
+                <Link href={`/dashboard/assets/${v.asset_id}`} className="text-ink link-underline">
+                  {assetName(v.asset_id)}
+                </Link>
+              </Td>
+              <Td label="Actual" mono className="text-ink-2">
+                {v.actual ?? "n/a"} <span className="text-ink-3">to</span> <span className="text-ink">{v.target_state ?? "n/a"}</span>
+              </Td>
+            </Tr>
+          ))}
+        </TBody>
+      </Table>
+    </>
+  );
+}
+
+function ContextRisk({ index, assetName }: { index: string; assetName: (id: string) => string }) {
   const risk = useQuery({ queryKey: ["context-risk"], queryFn: api.graph.contextRisk });
+  const [open, setOpen] = useState<string | null>(null);
   const d = risk.data;
   return (
-    <Card id="sec-context-risk">
-      <CardHeader>
-        <CardTitle className="text-base">Risk-ranked crypto (context-aware)</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Every current slot scored 0–100 from what it protects and where it is reachable — key
-          exchange vs signature, internet vs internal, data shelf life, and how many assets depend on it.
-        </p>
-      </CardHeader>
-      <CardContent>
-        {risk.isLoading ? (
-          <Skeleton className="h-32 w-full" />
-        ) : risk.isError || !d ? (
-          <p className="text-sm text-vulnerable">Failed to load.</p>
-        ) : d.components.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No crypto observed yet.</p>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2 text-xs">
-              {(["IMMEDIATE", "URGENT", "PLANNED", "MONITOR"] as const).map((t) => (
-                <Badge key={t} variant={TIER_BADGE[t]}>
-                  {t} {d.summary.tiers[t] ?? 0}
-                </Badge>
-              ))}
-              {d.summary.hndl ? <Badge variant="vulnerable">HNDL {d.summary.hndl}</Badge> : null}
-            </div>
-            <div className="divide-y text-sm">
-              {d.components.map((c) => (
-                <div key={c.rel_path} className="grid grid-cols-[3rem_6.5rem_1fr] gap-3 py-2">
-                  <span className="text-right font-semibold tabular-nums">{c.score.toFixed(0)}</span>
-                  <span>
-                    <Badge variant={TIER_BADGE[c.tier] ?? "muted"}>{c.tier}</Badge>
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-mono text-xs">
-                      {c.file_path} <span className="text-muted-foreground">[{c.slot_key}]</span>{" "}
-                      <span className="text-muted-foreground">{c.algorithm}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.role.replace("_", " ")} · {c.exposure}
-                      {c.inferred.includes("exposure") ? " (from asset type)" : ""}
-                      {c.dependents > 1 ? ` · ${c.dependents - 1} linked asset${c.dependents > 2 ? "s" : ""}` : ""}
-                      {c.hndl ? <span className="ml-1 text-vulnerable">HNDL</span> : null}
-                    </p>
-                    <p className="text-xs text-muted-foreground/80">{c.reasons.join("; ")}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {d.summary.hndl ? (
-              <p className="text-[0.65rem] text-muted-foreground">{d.summary.hndl_disclaimer}</p>
-            ) : null}
+    <Section
+      id="sec-risk"
+      index={index}
+      title="Risk-ranked cryptography"
+      description="Context-aware scoring: algorithm, role, exposure, data sensitivity and shelf life. Select a row to see why."
+    >
+      {risk.isLoading ? (
+        <TableSkeleton cols={6} />
+      ) : risk.isError ? (
+        <ErrorState message={errMsg(risk.error)} onRetry={() => risk.refetch()} />
+      ) : !d || !d.components.length ? (
+        <EmptyState title="No cryptography observed yet" action={{ label: "Add an asset", href: "/dashboard/assets?new=1" }} />
+      ) : (
+        <>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {Object.entries(d.summary.tiers).map(([t, n]) => (
+              <Chip key={t} tone={toneFor(t.toLowerCase())}>
+                {t.toLowerCase()} {n}
+              </Chip>
+            ))}
+            {d.summary.hndl > 0 && <Chip tone="immediate">HNDL {d.summary.hndl}</Chip>}
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <Table>
+            <THead>
+              <tr>
+                <Th align="right">Score</Th>
+                <Th>Tier</Th>
+                <Th>Algorithm</Th>
+                <Th>Where</Th>
+                <Th>Role and exposure</Th>
+                <Th>HNDL</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {d.components.map((c, i) => {
+                const k = `${c.rel_path}:${i}`;
+                const isOpen = open === k;
+                return (
+                  <Fragment key={k}>
+                    <Tr onClick={() => setOpen(isOpen ? null : k)} aria-expanded={isOpen}>
+                      <Td label="Score" align="right" mono>
+                        <span className="inline-flex items-center gap-2">
+                          {isOpen ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+                          {c.score.toFixed(0)}
+                        </span>
+                      </Td>
+                      <Td label="Tier">
+                        <StatusChip value={c.tier.toLowerCase()} />
+                      </Td>
+                      <Td label="Algorithm" mono>
+                        {c.algorithm}
+                      </Td>
+                      <Td label="Where" mono className="max-w-[280px]">
+                        <span className="block truncate">{c.asset_id ? assetName(c.asset_id) : c.rel_path}</span>
+                        {c.slot_key && <span className="text-ink-3">{c.slot_key}</span>}
+                      </Td>
+                      <Td label="Role" className="text-ink-2">
+                        {humanize(c.role)} · {humanize(c.exposure)}
+                      </Td>
+                      <Td label="HNDL">{c.hndl ? <Chip tone="immediate">yes</Chip> : <span className="font-mono text-xs text-ink-3">no</span>}</Td>
+                    </Tr>
+                    {isOpen && (
+                      <tr className="border-b border-rule bg-surface">
+                        <td colSpan={6} className="px-3 py-4">
+                          <ul className="grid gap-1.5 text-sm text-ink-2 md:grid-cols-2">
+                            {c.reasons.map((r, j) => (
+                              <li key={j} className="flex gap-2">
+                                <span className="font-mono text-xs text-ink-3">{String(j + 1).padStart(2, "0")}</span>
+                                {plain(r)}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-3 font-mono text-[11px] text-ink-3">
+                            data {humanize(c.data_sensitivity)} · shelf life {humanize(c.shelf_life)} · {c.dependents} dependents
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </TBody>
+          </Table>
+          <p className="mt-4 max-w-3xl text-xs text-ink-3">{plain(d.summary.hndl_disclaimer)}</p>
+        </>
+      )}
+    </Section>
+  );
+}
+
+function EventTimeline({
+  events,
+  assetName,
+}: {
+  events: { id: string; type: string; actor: string | null; asset_id: string | null; payload: Record<string, unknown> | null; at: string }[];
+  assetName: (id: string) => string;
+}) {
+  const [limit, setLimit] = useState(12);
+  const list = [...events].sort((a, b) => b.at.localeCompare(a.at));
+  return (
+    <div>
+      <ol className="relative border-l border-ink pl-6">
+        {list.slice(0, limit).map((e) => (
+          <li key={e.id} className="relative pb-5 last:pb-0">
+            <span aria-hidden className="absolute -left-[29px] top-1.5 h-2 w-2 bg-ink" />
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-sm font-medium capitalize text-ink">{humanize(e.type)}</span>
+              <RelTime value={e.at} className="font-mono text-[11px] text-ink-3" />
+              {e.asset_id && (
+                <Link href={`/dashboard/assets/${e.asset_id}`} className="text-xs text-ink-2 link-underline">
+                  {assetName(e.asset_id)}
+                </Link>
+              )}
+            </div>
+            {e.payload && Object.keys(e.payload).length > 0 && (
+              <p className="mt-1 truncate font-mono text-[11px] text-ink-3">
+                {Object.entries(e.payload)
+                  .slice(0, 4)
+                  .map(([k, v]) => `${k} ${typeof v === "string" && v.length > 14 ? v.slice(0, 8) : JSON.stringify(v)}`)
+                  .join(" · ")}
+              </p>
+            )}
+          </li>
+        ))}
+      </ol>
+      {list.length > limit && (
+        <Button variant="ghost" size="sm" className="mt-4" onClick={() => setLimit((l) => l + 20)}>
+          Show {Math.min(20, list.length - limit)} more
+        </Button>
+      )}
+    </div>
   );
 }

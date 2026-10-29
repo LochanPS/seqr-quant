@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.error("RESEND_API_KEY not set — lead capture cannot send email");
+    console.error("RESEND_API_KEY not set, lead capture cannot send email");
     return Response.json({ error: "Lead capture is not configured" }, { status: 503 });
   }
 

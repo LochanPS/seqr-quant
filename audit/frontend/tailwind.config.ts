@@ -1,99 +1,74 @@
 import type { Config } from "tailwindcss";
 
+// Every color is a CSS variable holding RGB channels (see globals.css), so one token set
+// drives both the paper (light) and carbon (dark) themes and alpha modifiers still work.
+const tone = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
-  darkMode: "class",
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  darkMode: ["selector", '[data-theme="dark"]'],
+  content: ["./src/**/*.{ts,tsx,mdx}"],
   theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: { "2xl": "1400px" },
+    // Radius is zero across the system; `xs` exists only for anti-aliasing tiny chips.
+    borderRadius: {
+      none: "0",
+      xs: "2px",
+      full: "9999px",
+    },
+    boxShadow: {
+      none: "none",
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-        // Brand / quantum palette (rgb via CSS vars)
-        quantum: "rgb(var(--quantum) / <alpha-value>)",
-        safe: "rgb(var(--safe) / <alpha-value>)",
-        vulnerable: "rgb(var(--vulnerable) / <alpha-value>)",
-        urgent: "rgb(var(--urgent) / <alpha-value>)",
-        planned: "rgb(var(--planned) / <alpha-value>)",
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        bg: tone("bg"),
+        surface: tone("surface"),
+        "surface-2": tone("surface-2"),
+        ink: tone("ink"),
+        "ink-2": tone("ink-2"),
+        "ink-3": tone("ink-3"),
+        rule: tone("rule"),
+        accent: tone("accent"),
+        immediate: tone("immediate"),
+        urgent: tone("urgent"),
+        planned: tone("planned"),
+        safe: tone("safe"),
+        hybrid: tone("hybrid"),
       },
       fontFamily: {
-        sans: ["var(--font-geist)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "ui-serif", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
+      fontSize: {
+        eyebrow: ["11px", { lineHeight: "16px", letterSpacing: "0.08em" }],
+      },
+      transitionTimingFunction: {
+        instrument: "cubic-bezier(0.2, 0, 0, 1)",
+        press: "cubic-bezier(0.34, 1.4, 0.64, 1)",
+      },
+      transitionDuration: {
+        micro: "120ms",
+        ui: "240ms",
+      },
+      maxWidth: {
+        measure: "68ch",
+        page: "1320px",
+      },
       keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+        "skeleton-breathe": {
+          "0%, 100%": { opacity: "0.55" },
+          "50%": { opacity: "1" },
         },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "pulse-ring": {
-          "0%": { transform: "scale(0.95)", opacity: "0.7" },
-          "70%": { transform: "scale(1.1)", opacity: "0" },
-          "100%": { transform: "scale(0.95)", opacity: "0" },
-        },
-        shimmer: {
-          "100%": { transform: "translateX(100%)" },
-        },
-        "scan-sweep": {
-          "0%": { transform: "translateY(-120%)" },
-          "100%": { transform: "translateY(420%)" },
+        "rule-shrink": {
+          from: { transform: "scaleX(1)" },
+          to: { transform: "scaleX(0)" },
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "pulse-ring": "pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite",
-        "scan-sweep": "scan-sweep 2.2s ease-in-out infinite",
+        skeleton: "skeleton-breathe 1.6s cubic-bezier(0.2, 0, 0, 1) infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [],
 };
+
 export default config;

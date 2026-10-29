@@ -2,526 +2,404 @@
 
 import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Atom, Loader2, Play, Target, Upload } from "lucide-react";
 import { api, type RemediationPlan, type RemediationResult } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn, errMsg, humanize } from "@/lib/utils";
+import { plain } from "@/lib/domain";
+import { PageHeader, Section, Segmented } from "@/components/ui/page";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Field, Input, Switch } from "@/components/ui/field";
+import { Notice, ReadoutSkeleton, TableSkeleton } from "@/components/ui/feedback";
+import { Chip, Stamp, StatusChip } from "@/components/ui/marks";
+import { CountUp, Readout, ReadoutStrip } from "@/components/ui/numbers";
+import { TBody, THead, Table, Td, Th, Tr } from "@/components/ui/table";
+import { CommandLine } from "@/components/ui/code";
 import { useToast } from "@/components/ui/toast";
+import { Curve } from "@/components/viz/curve";
+import { IconMinus, IconPlay, IconPlus, IconUpload } from "@/components/icons";
 
-type BadgeVariant = "vulnerable" | "urgent" | "planned" | "muted";
-const TIER_VARIANT: Record<string, BadgeVariant> = {
-  IMMEDIATE: "vulnerable",
-  URGENT: "urgent",
-  PLANNED: "planned",
-  MONITOR: "muted",
-};
+type Mode = "infra" | "sample" | "upload";
+
+function best(r: RemediationResult): RemediationPlan | undefined {
+  return r.plans.opt ?? r.plans.exhaustive ?? r.plans.greedy ?? undefined;
+}
 
 export default function RemediationPage() {
-  const { toast } = useToast();
+  const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<"infra" | "code">("infra");
-  const [budget, setBudget] = useState("24");
+  const [mode, setMode] = useState<Mode>("infra");
+  const [budget, setBudget] = useState(24);
   const [report, setReport] = useState<Record<string, unknown> | null>(null);
   const [reportName, setReportName] = useState<string | null>(null);
   const [useOpt, setUseOpt] = useState(true);
   const [useQaoa, setUseQaoa] = useState(false);
 
   const run = useMutation({
-    mutationFn: () =>
-      mode === "infra"
-        ? api.remediation.planInfra({
-            budget: Number(budget) || 24,
-            use_opt: useOpt,
-            use_qaoa: useQaoa,
-            curve: [8, 24, 48],
-          })
-        : api.remediation.plan({
-            report,
-            budget: Number(budget) || 40,
-            use_opt: useOpt,
-            use_qaoa: useQaoa,
-            curve: [20, 40, 80],
-          }),
-    onError: (e: Error) =>
-      toast({
-        title: "Planning failed",
-        description: e.message,
-        variant: "error",
-      }),
+    mutationFn: () => {
+      const b = Math.max(1, budget || 1);
+      if (mode === "infra") return api.remediation.planInfra({ budget: b, use_opt: useOpt, use_qaoa: useQaoa, curve: curveFor(b) });
+      return api.remediation.plan({ report: mode === "upload" ? report : null, budget: b, use_opt: useOpt, use_qaoa: useQaoa, curve: curveFor(b) });
+    },
+    onSuccess: (r) => {
+      const p = best(r);
+      toast({ title: "Plan ready", description: p ? `${p.removed_pct.toFixed(1)}% of risk removed for ${p.effort} engineer-hours.` : undefined, tone: "success" });
+    },
+    onError: (e) => toast({ title: "Planning failed", description: errMsg(e), tone: "error" }),
   });
 
   async function onFile(f: File | undefined) {
     if (!f) return;
     try {
       const parsed = JSON.parse(await f.text());
-      if (!Array.isArray(parsed?.findings))
-        throw new Error("no findings[] in this file");
+      if (!Array.isArray(parsed?.findings)) throw new Error("The file has no findings array.");
       setReport(parsed);
       setReportName(f.name);
+      setMode("upload");
+      run.reset();
     } catch (e) {
-      toast({
-        title: "Not a risk-v2 report",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "error",
-      });
+      toast({ title: "Not a risk-v2 report", description: errMsg(e), tone: "error" });
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
   const r = run.data;
+  const canRun = mode !== "upload" || !!report;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Remediation planner
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Given an engineer-hour budget, choose the fixes that remove the most
-          quantum risk. Findings are ranked by context-aware risk; the selection
-          is solved with QpiAI Opt and checked against a greedy heuristic and a
-          certified optimum.
-        </p>
-      </div>
+    <div className="space-y-12">
+      <PageHeader
+        eyebrow="Planning"
+        title="Remediation planner"
+        description="Given an engineer-hour budget, choose the fixes that remove the most quantum risk. Findings are ranked by context-aware risk; the selection is solved with QpiAI Opt and checked against a greedy heuristic and a certified optimum."
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Inputs</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-          <div className="space-y-2">
-            <Label htmlFor="budget">Budget (engineer-hours)</Label>
-            <Input
-              id="budget"
-              type="number"
-              min={1}
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-            />
+      <section className="grid grid-cols-1 gap-10 border-y border-ink py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <div className="min-w-0 space-y-4">
+          <p className="eyebrow">01 · Findings</p>
+          <Segmented
+            label="Findings source"
+            value={mode}
+            onChange={(m) => {
+              if (m === "upload" && !report) {
+                fileRef.current?.click();
+                return;
+              }
+              setMode(m);
+              setBudget(m === "infra" ? 24 : 40);
+              run.reset();
+            }}
+            options={[
+              { value: "infra", label: "Your infrastructure" },
+              { value: "sample", label: "ACME Bank sample" },
+              { value: "upload", label: reportName ? "Uploaded file" : "Upload" },
+            ]}
+          />
+          <p className="max-w-md text-sm text-ink-2">
+            {mode === "infra" &&
+              "Every vulnerable slot in your asset graph, ranked as on the Overview. Actions include hybrid key exchange, SSH PQ KEX, certificate reissue, origin lock-down and segmentation."}
+            {mode === "sample" && "A sample codebase report from a fictional bank, useful for seeing the solver on a larger instance."}
+            {mode === "upload" && (reportName ? <span className="font-mono">{reportName}</span> : "Choose a risk-v2 JSON report.")}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()}>
+              <IconUpload size={14} /> {report ? "Replace file" : "Upload risk-v2 JSON"}
+            </Button>
+            {report && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setReport(null);
+                  setReportName(null);
+                  setMode("sample");
+                  run.reset();
+                }}
+              >
+                Remove file
+              </Button>
+            )}
+            <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" tabIndex={-1} onChange={(e) => onFile(e.target.files?.[0])} />
           </div>
-          <div className="space-y-2">
-            <Label>Findings</Label>
-            <div className="flex gap-1">
-              {(["infra", "code"] as const).map((m) => (
-                <Button
-                  key={m}
-                  size="sm"
-                  variant={mode === m ? "default" : "outline"}
-                  onClick={() => {
-                    setMode(m);
-                    setBudget(m === "infra" ? "24" : "40");
-                    run.reset();
-                  }}
-                >
-                  {m === "infra"
-                    ? "Infrastructure (your org)"
-                    : "Code (risk-v2 report)"}
+          <div>
+            <p className="mb-1.5 text-xs text-ink-3">Produce your own report with the CLI:</p>
+            <CommandLine command="seqr scan code PATH --context ctx.json --output json" />
+          </div>
+        </div>
+
+        <div className="min-w-0 space-y-4">
+          <p className="eyebrow">02 · Budget and solvers</p>
+          <Field label="Budget in engineer-hours">
+            {({ id }) => (
+              <div className="flex w-56">
+                <Button variant="secondary" size="icon" aria-label="Decrease budget" onClick={() => setBudget((b) => Math.max(1, b - 4))}>
+                  <IconMinus size={16} />
                 </Button>
-              ))}
-            </div>
-            {mode === "infra" ? (
-              <p className="text-xs text-muted-foreground">
-                Every vulnerable crypto slot in your asset graph, ranked as on
-                the Posture page. Actions: hybrid key exchange, SSH PQ KEX,
-                certificate reissue, origin lock-down, full migration,
-                segmentation.
-              </p>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    <Upload className="mr-2 h-4 w-4" /> Upload risk-v2 JSON
-                  </Button>
-                  {report ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setReport(null);
-                        setReportName(null);
-                      }}
-                    >
-                      Use sample
-                    </Button>
-                  ) : null}
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="application/json,.json"
-                    className="hidden"
-                    onChange={(e) => onFile(e.target.files?.[0])}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {reportName ?? "ACME Bank sample"} — produce your own with{" "}
-                  <code className="font-mono">
-                    seqr scan code PATH --context ctx.json --output json
-                  </code>
-                </p>
-              </>
+                <Input
+                  id={id}
+                  type="number"
+                  min={1}
+                  value={budget}
+                  onChange={(e) => setBudget(Number(e.target.value))}
+                  className="-mx-px text-center font-mono text-base tabular"
+                />
+                <Button variant="secondary" size="icon" aria-label="Increase budget" onClick={() => setBudget((b) => b + 4)}>
+                  <IconPlus size={16} />
+                </Button>
+              </div>
             )}
+          </Field>
+          <div className="max-w-md space-y-3 border-t border-rule pt-4">
+            <Switch checked={useOpt} onChange={setUseOpt} label="Use QpiAI Opt" description="Solve the selection on QpiAI's optimiser, then compare against greedy and exhaustive search." />
+            <Switch checked={useQaoa} onChange={setUseQaoa} label="Run QAOA alternatives" description="Sample near-optimal alternatives on QpiAI QCloud. Slower, about 10 to 20 seconds." />
           </div>
-          <Button onClick={() => run.mutate()} disabled={run.isPending}>
-            {run.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Play className="mr-2 h-4 w-4" />
-            )}
-            Plan
-          </Button>
-          <div className="flex flex-wrap gap-6 text-sm md:col-span-3">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={useOpt}
-                onChange={(e) => setUseOpt(e.target.checked)}
-              />
-              QpiAI Opt (HUBO)
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={useQaoa}
-                onChange={(e) => setUseQaoa(e.target.checked)}
-              />
-              QpiAI QCloud QAOA alternatives (slower, ~10–20 s)
-            </label>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {r ? <Results r={r} /> : null}
+        <div className="flex items-end">
+          <Button size="lg" onClick={() => run.mutate()} pending={run.isPending} pendingLabel={useQaoa ? "Solving, QAOA running" : "Solving"} disabled={!canRun}>
+            <IconPlay size={16} /> Plan remediation
+          </Button>
+        </div>
+      </section>
+
+      {run.isPending && (
+        <div className="space-y-10">
+          <ReadoutSkeleton />
+          <TableSkeleton cols={3} rows={5} />
+        </div>
+      )}
+      {!r && !run.isPending && (
+        <Notice title="No plan yet">Pick a findings source and budget, then run the planner. Results appear here.</Notice>
+      )}
+      {r && !run.isPending && <Results r={r} />}
     </div>
   );
 }
 
-function bestPlan(r: RemediationResult): RemediationPlan | undefined {
-  return r.plans.opt ?? r.plans.exhaustive ?? r.plans.greedy ?? undefined;
+function curveFor(b: number) {
+  const pts = [0.25, 0.5, 1, 1.5, 2, 3].map((f) => Math.max(1, Math.round(b * f)));
+  return Array.from(new Set(pts)).sort((x, y) => x - y);
 }
 
 function Results({ r }: { r: RemediationResult }) {
-  const best = bestPlan(r);
-  const effortOf = Object.fromEntries(r.actions.map((a) => [a.id, a]));
+  const p = best(r);
+  const byId = Object.fromEntries(r.actions.map((a) => [a.id, a]));
+  const plans = (["greedy", "exhaustive", "opt"] as const).map((k) => [k, r.plans[k]] as const).filter(([, v]) => !!v);
+
   return (
-    <>
-      <div className="grid gap-4 md:grid-cols-4">
-        <Stat
-          label="Total risk"
-          value={r.baseline_risk.toFixed(0)}
-          sub={`${r.findings.length} findings`}
-        />
-        <Stat
+    <div className="space-y-14">
+      <ReadoutStrip cols={4}>
+        <Readout label="Total risk" value={<CountUp value={r.baseline_risk} />} foot={`${r.findings.length} findings · source ${humanize(r.source)}`} />
+        <Readout
           label="Risk removed"
-          value={best ? `${best.removed_pct.toFixed(1)}%` : "—"}
-          sub={best?.method.split(":")[0] ?? ""}
+          value={p ? <CountUp value={p.removed_pct} decimals={1} suffix="%" /> : "n/a"}
+          tone={p && p.removed_pct > 50 ? "safe" : "urgent"}
+          foot={p ? p.method.split(":")[0] : undefined}
         />
-        <Stat
-          label="Effort used"
-          value={best ? `${best.effort}h` : "—"}
-          sub={`of ${r.budget}h budget`}
-        />
-        <Stat
-          label="QpiAI Opt vs optimum"
-          value={
-            r.opt_gap_to_optimum === undefined
-              ? "—"
-              : r.opt_gap_to_optimum === 0
-                ? "optimal"
-                : `+${r.opt_gap_to_optimum}`
-          }
-          sub={
-            r.plans.exhaustive
-              ? "certified by exhaustive search"
-              : "no certificate (large instance)"
-          }
-        />
-      </div>
-
-      {Object.keys(r.errors).length ? (
-        <Card className="border-urgent/40">
-          <CardContent className="pt-6 text-sm">
-            {Object.entries(r.errors).map(([k, v]) => (
-              <p key={k}>
-                <span className="font-medium">{k}:</span> {v}
-              </p>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Target className="h-4 w-4" /> Chosen plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {best && best.chosen.length ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Action</TableHead>
-                    <TableHead className="text-right">Effort</TableHead>
-                    <TableHead className="text-right">Covers</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {best.chosen.map((id) => (
-                    <TableRow key={id}>
-                      <TableCell>
-                        <div className="font-mono text-xs">{id}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {effortOf[id]?.label}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {effortOf[id]?.effort}h
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {effortOf[id]?.covers}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        <Readout label="Effort used" value={p ? <CountUp value={p.effort} suffix=" h" /> : "n/a"} foot={`of ${r.budget} h budget`} />
+        <div className="p-5">
+          <p className="eyebrow">QpiAI Opt against optimum</p>
+          <div className="mt-3">
+            {r.opt_gap_to_optimum === undefined ? (
+              <span className="font-display text-3xl text-ink-3">n/a</span>
+            ) : r.opt_gap_to_optimum === 0 ? (
+              <Stamp tone="safe" value="optimal">
+                Optimal
+              </Stamp>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No action fits this budget.
-              </p>
+              <Stamp tone="urgent" value={r.opt_gap_to_optimum}>
+                +{r.opt_gap_to_optimum}
+              </Stamp>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Solver comparison</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Method</TableHead>
-                  <TableHead className="text-right">Residual</TableHead>
-                  <TableHead className="text-right">Removed</TableHead>
-                  <TableHead className="text-right">Effort</TableHead>
-                  <TableHead className="text-right">Time</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(["greedy", "opt", "exhaustive"] as const).map((k) => {
-                  const p = r.plans[k];
-                  if (!p) return null;
-                  return (
-                    <TableRow key={k}>
-                      <TableCell className="font-mono text-xs">
-                        {p.method}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {p.residual.toFixed(1)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {p.removed_pct.toFixed(1)}%
-                      </TableCell>
-                      <TableCell className="text-right">{p.effort}h</TableCell>
-                      <TableCell className="text-right">
-                        {p.solver_time_s
-                          ? `${p.solver_time_s.toFixed(2)}s`
-                          : "—"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-
-      {r.curve.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Risk removed vs budget</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {r.curve.map((c) => (
-              <div
-                key={c.budget}
-                className="grid grid-cols-[4rem_1fr_4rem] items-center gap-3 text-sm"
-              >
-                <span className="text-muted-foreground">{c.budget}h</span>
-                <div className="h-3 rounded bg-muted">
-                  <div
-                    className="h-3 rounded bg-primary"
-                    style={{ width: `${Math.min(100, c.removed_pct)}%` }}
-                  />
-                </div>
-                <span className="text-right tabular-nums">
-                  {c.removed_pct.toFixed(1)}%
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {r.qaoa ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Atom className="h-4 w-4" /> QpiAI QCloud — alternative plans
-              (CVaR-QAOA)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              {r.qaoa.qubits} qubits · {r.qaoa.reduced_actions.length} contested
-              actions · reps {r.qaoa.reps} · {r.qaoa.seconds}s · P(best){" "}
-              {r.qaoa.p_optimal.toFixed(3)} vs uniform{" "}
-              {r.qaoa.p_uniform.toFixed(3)} (×{r.qaoa.amplification})
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {r.qaoa.contains_best_known
-                ? "The reduced space contains the best plan found classically"
-                : "The best classical plan does not fit in the reduced space"}
-              {" · "}
-              {r.qaoa.sampled_optimum
-                ? `QAOA sampled its optimum (residual ${r.qaoa.reduced_optimum.toFixed(1)})`
-                : `QAOA never sampled its optimum (residual ${r.qaoa.reduced_optimum.toFixed(1)})`}
-              {" · "}
-              {r.qaoa.amplification !== null && r.qaoa.amplification > 1
-                ? "above uniform this run (varies run to run; not a reliable advantage)"
-                : "no better than uniform sampling this run"}
-            </p>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead className="text-right">Residual</TableHead>
-                  <TableHead className="text-right">Effort</TableHead>
-                  <TableHead className="text-right">Sample P</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {r.qaoa.alternatives.map((a, i) => (
-                  <TableRow key={a.chosen.join("|") || "none"}>
-                    <TableCell>{i + 1}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {a.chosen.join(", ") || "(nothing)"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {a.residual.toFixed(1)}
-                    </TableCell>
-                    <TableCell className="text-right">{a.effort}h</TableCell>
-                    <TableCell className="text-right">
-                      {a.probability.toFixed(3)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Findings, ranked by context-aware risk
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">Score</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead>Where</TableHead>
-                <TableHead>Role / exposure</TableHead>
-                <TableHead>Why</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {r.findings.map((f) => (
-                <TableRow
-                  key={`${f.rel_path}:${f.line_number}:${f.algorithm}:${f.slot_key ?? ""}`}
-                >
-                  <TableCell className="text-right tabular-nums">
-                    {Number(f.score).toFixed(0)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={TIER_VARIANT[f.tier] ?? "muted"}>
-                      {f.tier}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-mono text-xs">
-                      {f.slot_key
-                        ? f.rel_path
-                        : `${f.rel_path}:${f.line_number}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {f.algorithm}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {f.role.replace("_", " ")} · {f.exposure}
-                    {f.hndl ? (
-                      <span className="ml-1 text-vulnerable">HNDL</span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="max-w-md text-xs text-muted-foreground">
-                    {f.top_reason}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-1 text-xs text-muted-foreground">
-        {r.notes.map((n) => (
-          <p key={n}>{n}</p>
-        ))}
-      </div>
-    </>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
-          {label}
+          </div>
+          <p className="mt-3 text-xs text-ink-3">{r.plans.exhaustive ? "Certified by exhaustive search" : "No certificate, instance too large"}</p>
         </div>
-        <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
-        <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
-      </CardContent>
-    </Card>
+      </ReadoutStrip>
+
+      {Object.keys(r.errors).length > 0 && (
+        <div className="border border-urgent/60 p-5">
+          <p className="eyebrow text-urgent">Solver notes</p>
+          <ul className="mt-2 space-y-1 text-sm text-ink-2">
+            {Object.entries(r.errors).map(([k, v]) => (
+              <li key={k}>
+                <span className="font-mono text-ink">{k}</span> {plain(v)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="grid gap-12 xl:grid-cols-[1fr_1.2fr]">
+        <Section index="01" title="Chosen actions" description={p ? `${p.chosen.length} actions selected by ${p.method.split(":")[0]}.` : undefined}>
+          {!p || !p.chosen.length ? (
+            <Notice title="Nothing fits this budget">Raise the budget to cover at least one action.</Notice>
+          ) : (
+            <Table>
+              <THead>
+                <tr>
+                  <Th>Action</Th>
+                  <Th align="right">Effort</Th>
+                  <Th align="right">Covers</Th>
+                </tr>
+              </THead>
+              <TBody>
+                {p.chosen.map((id, i) => (
+                  <Tr key={id}>
+                    <Td label="Action">
+                      <span className="mr-3 font-mono text-[11px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+                      {byId[id]?.label ?? id}
+                    </Td>
+                    <Td label="Effort" align="right" mono>
+                      {byId[id]?.effort ?? "?"} h
+                    </Td>
+                    <Td label="Covers" align="right" mono>
+                      {byId[id]?.covers ?? "?"}
+                    </Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </Table>
+          )}
+        </Section>
+
+        <Section index="02" title="Risk removed against budget" description="Each point is a full solve at that budget. The accent line marks yours.">
+          <Curve points={r.curve.map((c) => ({ x: c.budget, y: c.removed_pct }))} markX={r.budget} xLabel="Hours" yLabel="Removed" />
+        </Section>
+      </div>
+
+      <Section index="03" title="Solver comparison">
+        <Table>
+          <THead>
+            <tr>
+              <Th>Method</Th>
+              <Th align="right">Residual</Th>
+              <Th align="right">Removed</Th>
+              <Th align="right">Effort</Th>
+              <Th>Feasible</Th>
+              <Th align="right">Time</Th>
+            </tr>
+          </THead>
+          <TBody>
+            {plans.map(([k, v]) => (
+              <Tr key={k} className={cn(v === p && "bg-surface")}>
+                <Td label="Method">
+                  <span className="font-medium text-ink">{k}</span>
+                  <span className="ml-2 font-mono text-[11px] text-ink-3">{v!.method}</span>
+                </Td>
+                <Td label="Residual" align="right" mono>
+                  {v!.residual.toFixed(1)}
+                </Td>
+                <Td label="Removed" align="right" mono>
+                  {v!.removed_pct.toFixed(1)}%
+                </Td>
+                <Td label="Effort" align="right" mono>
+                  {v!.effort} h
+                </Td>
+                <Td label="Feasible">
+                  <StatusChip value={v!.feasible ? "pass" : "fail"} />
+                </Td>
+                <Td label="Time" align="right" mono>
+                  {v!.solver_time_s != null ? `${v!.solver_time_s.toFixed(2)} s` : "n/a"}
+                </Td>
+              </Tr>
+            ))}
+          </TBody>
+        </Table>
+      </Section>
+
+      {r.qaoa && (
+        <Section index="04" title="QAOA alternatives" description={`${r.qaoa.qubits} qubits · ${r.qaoa.reps} reps · CVaR alpha ${r.qaoa.cvar_alpha} · ${r.qaoa.seconds.toFixed(1)} s`}>
+          <div className="mb-5 flex flex-wrap gap-2">
+            <Chip tone={r.qaoa.contains_best_known ? "safe" : "urgent"}>{r.qaoa.contains_best_known ? "contains best known" : "best known not sampled"}</Chip>
+            {r.qaoa.amplification != null && <Chip>amplification {r.qaoa.amplification.toFixed(1)}x</Chip>}
+            <Chip>p optimal {(r.qaoa.p_optimal * 100).toFixed(1)}%</Chip>
+            <Chip>p uniform {(r.qaoa.p_uniform * 100).toFixed(1)}%</Chip>
+          </div>
+          <Table>
+            <THead>
+              <tr>
+                <Th>Actions</Th>
+                <Th align="right">Residual</Th>
+                <Th align="right">Effort</Th>
+                <Th align="right">Sample P</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {r.qaoa.alternatives.map((a, i) => (
+                <Tr key={i}>
+                  <Td label="Actions" className="text-ink-2">
+                    {a.chosen.map((id) => byId[id]?.label ?? id).join(", ") || "none"}
+                    {!a.feasible && <Chip tone="immediate" className="ml-2">over budget</Chip>}
+                  </Td>
+                  <Td label="Residual" align="right" mono>
+                    {a.residual.toFixed(1)}
+                  </Td>
+                  <Td label="Effort" align="right" mono>
+                    {a.effort} h
+                  </Td>
+                  <Td label="Sample P" align="right" mono>
+                    {(a.probability * 100).toFixed(1)}%
+                  </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        </Section>
+      )}
+
+      <Section index={r.qaoa ? "05" : "04"} title="Findings" description="The ranked input to the planner.">
+        <Table>
+          <THead>
+            <tr>
+              <Th align="right">Score</Th>
+              <Th>Tier</Th>
+              <Th>Where</Th>
+              <Th>Role and exposure</Th>
+              <Th>HNDL</Th>
+              <Th>Top reason</Th>
+            </tr>
+          </THead>
+          <TBody>
+            {r.findings.slice(0, 60).map((f, i) => (
+              <Tr key={i}>
+                <Td label="Score" align="right" mono>
+                  {f.score.toFixed(0)}
+                </Td>
+                <Td label="Tier">
+                  <StatusChip value={f.tier.toLowerCase()} />
+                </Td>
+                <Td label="Where" mono className="max-w-[280px]">
+                  <span className="block truncate">{f.rel_path}</span>
+                  <span className="text-ink-3">
+                    {f.algorithm}
+                    {f.line_number ? ` · line ${f.line_number}` : ""}
+                  </span>
+                </Td>
+                <Td label="Role" className="text-ink-2">
+                  {humanize(f.role)} · {humanize(f.exposure)}
+                </Td>
+                <Td label="HNDL">{f.hndl ? <Chip tone="immediate">yes</Chip> : <span className="font-mono text-xs text-ink-3">no</span>}</Td>
+                <Td label="Reason" className="max-w-[340px] text-ink-2">
+                  {plain(f.top_reason)}
+                </Td>
+              </Tr>
+            ))}
+          </TBody>
+        </Table>
+        {r.findings.length > 60 && <p className="mt-3 font-mono text-xs text-ink-3">Showing the top 60 of {r.findings.length}.</p>}
+      </Section>
+
+      {r.notes.length > 0 && (
+        <Section title="Notes">
+          <ul className="max-w-3xl space-y-2 text-sm text-ink-2">
+            {r.notes.map((n, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="font-mono text-xs text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+                {plain(n)}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+    </div>
   );
 }

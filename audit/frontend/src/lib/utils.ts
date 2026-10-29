@@ -6,22 +6,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatRelative(date: string | Date | null | undefined): string {
-  if (!date) return "—";
+  if (!date) return "n/a";
   const d = typeof date === "string" ? new Date(date) : date;
   const diff = Date.now() - d.getTime();
   const sec = Math.round(diff / 1000);
+  if (sec < 0) return "just now";
   if (sec < 60) return "just now";
   const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
+  if (min < 60) return `${min} min ago`;
   const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24) return `${hr} h ago`;
   const day = Math.round(hr / 24);
-  if (day < 30) return `${day}d ago`;
+  if (day < 30) return `${day} d ago`;
   return d.toLocaleDateString();
 }
 
 export function formatDate(date: string | Date | null | undefined): string {
-  if (!date) return "—";
+  if (!date) return "n/a";
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleString(undefined, {
     month: "short",
@@ -35,10 +36,10 @@ export function formatDate(date: string | Date | null | undefined): string {
 export function truncateMiddle(str: string, max = 48): string {
   if (str.length <= max) return str;
   const half = Math.floor((max - 1) / 2);
-  return `${str.slice(0, half)}…${str.slice(str.length - half)}`;
+  return `${str.slice(0, half)}...${str.slice(str.length - half)}`;
 }
 
-// Crypto-agility score is 0–10, but the ceiling for a well-configured *classical* stack is
+// Crypto-agility score is 0 to 10, but the ceiling for a well-configured *classical* stack is
 // ~6.5 (full PQC readiness is not yet deployable), so a bare "6.5/10" misreads as a failure.
 // These tiers reframe the number by what's actually achievable today.
 export function agilityTier(score: number | null | undefined): {
@@ -51,4 +52,20 @@ export function agilityTier(score: number | null | undefined): {
   if (s < 7.5) return { label: "Transition-ready", variant: "planned" };
   if (s < 9) return { label: "Hybrid-adopted", variant: "safe" };
   return { label: "PQC-ready", variant: "safe" };
+}
+
+export function shortId(id: string | null | undefined, n = 8): string {
+  if (!id) return "n/a";
+  return id.length > n ? id.slice(0, n) : id;
+}
+
+export function humanize(value: string | null | undefined): string {
+  if (!value) return "n/a";
+  return value.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function errMsg(err: unknown, fallback = "Something went wrong."): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string") return err;
+  return fallback;
 }
