@@ -254,6 +254,7 @@ class RiskAssessment:
     factors: list[Factor]
     inferred: list[str]          # which context fields came from path heuristics
     recommended_replacement: str = ""
+    effort_hours: int = 0        # scanner's estimated fix effort for this finding
     duplicates: int = 0          # other matches collapsed into this one (same file/line/family)
 
     def reasons(self, n: int = 2) -> list[str]:
@@ -367,6 +368,7 @@ def assess_finding(finding: Any, root: str | Path | None = None,
         data_sensitivity=sensitivity, shelf_life=shelf, code_reality=reality,
         dependents=dependents, controls=controls, hndl=hndl, factors=factors, inferred=inferred,
         recommended_replacement=getattr(finding, "recommended_replacement", "") or "",
+        effort_hours=int(getattr(finding, "estimated_effort_hours", 0) or 0),
     )
 
 

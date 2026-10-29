@@ -1,0 +1,860 @@
+{
+  "target": "ecdat-demo/sample-repo",
+  "files_scanned": 9,
+  "summary": {
+    "findings": 16,
+    "tiers": {
+      "IMMEDIATE": 2,
+      "URGENT": 7,
+      "PLANNED": 6,
+      "MONITOR": 1
+    },
+    "hndl": 1,
+    "inferred_exposure": 14,
+    "hndl_disclaimer": "HNDL exposure scores are predictive cryptographic risk metrics based on data-type endurance, not indicators of active data interception or confirmed network breaches."
+  },
+  "findings": [
+    {
+      "file_path": "ecdat-demo\\sample-repo\\payments\\legacy_dh.py",
+      "rel_path": "payments/legacy_dh.py",
+      "line_number": 8,
+      "algorithm": "DH",
+      "algorithm_family": "DH",
+      "score": 96.0,
+      "tier": "IMMEDIATE",
+      "role": "key_exchange",
+      "exposure": "internet",
+      "data_sensitivity": "highly_confidential",
+      "shelf_life": "long",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": true,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "DH \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 1.0,
+          "reason": "key exchange \u2014 traffic captured today can be decrypted once a quantum computer exists"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 1.0,
+          "reason": "highly_confidential data, long shelf life"
+        },
+        {
+          "name": "hndl",
+          "multiplier": 1.2,
+          "reason": "estimated harvest-now-decrypt-later exposure: long-lived data on a reachable channel"
+        }
+      ],
+      "inferred": [
+        "role",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-KEM-768 (FIPS 203)",
+      "effort_hours": 12,
+      "duplicates": 0,
+      "top_reason": "estimated harvest-now-decrypt-later exposure: long-lived data on a reachable channel"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\gateway\\rsa_gateway.go",
+      "rel_path": "gateway/rsa_gateway.go",
+      "line_number": 12,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 71.4,
+      "tier": "IMMEDIATE",
+      "role": "keygen",
+      "exposure": "internet",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 6,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "blast_radius",
+          "multiplier": 1.5,
+          "reason": "wide blast radius \u2014 shared module, 6 dependents"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) via cloudflare/circl or open-quantum-safe/liboqs-go",
+      "effort_hours": 10,
+      "duplicates": 0,
+      "top_reason": "wide blast radius \u2014 shared module, 6 dependents"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\payments\\rsa_keys.py",
+      "rel_path": "payments/rsa_keys.py",
+      "line_number": 8,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 68.0,
+      "tier": "URGENT",
+      "role": "keygen",
+      "exposure": "internet",
+      "data_sensitivity": "highly_confidential",
+      "shelf_life": "long",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 1.0,
+          "reason": "highly_confidential data, long shelf life"
+        }
+      ],
+      "inferred": [
+        "role",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange",
+      "effort_hours": 8,
+      "duplicates": 0,
+      "top_reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\web\\src\\auth.js",
+      "rel_path": "web/src/auth.js",
+      "line_number": 9,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 61.9,
+      "tier": "URGENT",
+      "role": "keygen",
+      "exposure": "internet",
+      "data_sensitivity": "confidential",
+      "shelf_life": "long",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.91,
+          "reason": "confidential data, long shelf life"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange",
+      "effort_hours": 8,
+      "duplicates": 0,
+      "top_reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\web\\src\\legacy_crypto.js",
+      "rel_path": "web/src/legacy_crypto.js",
+      "line_number": 14,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 56.0,
+      "tier": "URGENT",
+      "role": "encryption",
+      "exposure": "internet",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 1.0,
+          "reason": "public-key encryption \u2014 ciphertext captured today can be decrypted later"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange",
+      "effort_hours": 10,
+      "duplicates": 1,
+      "top_reason": "internal data, medium shelf life"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\gateway\\ecdsa_gateway.go",
+      "rel_path": "gateway/ecdsa_gateway.go",
+      "line_number": 13,
+      "algorithm": "ECDSA",
+      "algorithm_family": "ECC",
+      "score": 47.8,
+      "tier": "URGENT",
+      "role": "signature",
+      "exposure": "internet",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 6,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 70.0,
+          "reason": "ECDSA \u2014 algorithm risk 7/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.65,
+          "reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "blast_radius",
+          "multiplier": 1.5,
+          "reason": "wide blast radius \u2014 shared module, 6 dependents"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) via cloudflare/circl",
+      "effort_hours": 10,
+      "duplicates": 1,
+      "top_reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\web\\src\\legacy_crypto.js",
+      "rel_path": "web/src/legacy_crypto.js",
+      "line_number": 9,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 47.6,
+      "tier": "URGENT",
+      "role": "keygen",
+      "exposure": "internet",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange",
+      "effort_hours": 10,
+      "duplicates": 0,
+      "top_reason": "internal data, medium shelf life"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\web\\src\\auth.js",
+      "rel_path": "web/src/auth.js",
+      "line_number": 16,
+      "algorithm": "RSA-SHA256",
+      "algorithm_family": "RSA",
+      "score": 47.3,
+      "tier": "URGENT",
+      "role": "signature",
+      "exposure": "internet",
+      "data_sensitivity": "confidential",
+      "shelf_life": "long",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA-SHA256 \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.65,
+          "reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.91,
+          "reason": "confidential data, long shelf life"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 via seqr-scanner SDK",
+      "effort_hours": 4,
+      "duplicates": 0,
+      "top_reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\web\\src\\auth.js",
+      "rel_path": "web/src/auth.js",
+      "line_number": 22,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 47.3,
+      "tier": "URGENT",
+      "role": "signature",
+      "exposure": "internet",
+      "data_sensitivity": "confidential",
+      "shelf_life": "long",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.65,
+          "reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 1.0,
+          "reason": "internet-facing \u2014 reachable by any attacker"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.91,
+          "reason": "confidential data, long shelf life"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) for signatures, ML-KEM-768 (FIPS 203) for key exchange",
+      "effort_hours": 8,
+      "duplicates": 0,
+      "top_reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java",
+      "rel_path": "core/src/CryptoUtil.java",
+      "line_number": 13,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 41.1,
+      "tier": "PLANNED",
+      "role": "keygen",
+      "exposure": "unknown",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 0.75,
+          "reason": "exposure unknown \u2014 supply a context file to refine"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "blast_radius",
+          "multiplier": 1.15,
+          "reason": "wide blast radius \u2014 shared module"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) \u2014 upgrade to BouncyCastle PQC or wait for Java 21+ JCA PQC",
+      "effort_hours": 12,
+      "duplicates": 0,
+      "top_reason": "internal data, medium shelf life"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java",
+      "rel_path": "core/src/CryptoUtil.java",
+      "line_number": 14,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 41.1,
+      "tier": "PLANNED",
+      "role": "keygen",
+      "exposure": "unknown",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 0.75,
+          "reason": "exposure unknown \u2014 supply a context file to refine"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "blast_radius",
+          "multiplier": 1.15,
+          "reason": "wide blast radius \u2014 shared module"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) \u2014 upgrade to BouncyCastle PQC or wait for Java 21+ JCA PQC",
+      "effort_hours": 12,
+      "duplicates": 0,
+      "top_reason": "internal data, medium shelf life"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java",
+      "rel_path": "core/src/CryptoUtil.java",
+      "line_number": 15,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 41.1,
+      "tier": "PLANNED",
+      "role": "keygen",
+      "exposure": "unknown",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 0.75,
+          "reason": "exposure unknown \u2014 supply a context file to refine"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "blast_radius",
+          "multiplier": 1.15,
+          "reason": "wide blast radius \u2014 shared module"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) \u2014 upgrade to BouncyCastle PQC or wait for Java 21+ JCA PQC",
+      "effort_hours": 12,
+      "duplicates": 0,
+      "top_reason": "internal data, medium shelf life"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\auth\\tokens.py",
+      "rel_path": "auth/tokens.py",
+      "line_number": 24,
+      "algorithm": "RSA-SHA256",
+      "algorithm_family": "RSA",
+      "score": 35.5,
+      "tier": "PLANNED",
+      "role": "signature",
+      "exposure": "unknown",
+      "data_sensitivity": "confidential",
+      "shelf_life": "long",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 80.0,
+          "reason": "RSA-SHA256 \u2014 algorithm risk 8/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.65,
+          "reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 0.75,
+          "reason": "exposure unknown \u2014 supply a context file to refine"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.91,
+          "reason": "confidential data, long shelf life"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 via seqr-scanner SDK",
+      "effort_hours": 4,
+      "duplicates": 0,
+      "top_reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java",
+      "rel_path": "core/src/CryptoUtil.java",
+      "line_number": 13,
+      "algorithm": "ECDSA",
+      "algorithm_family": "ECC",
+      "score": 27.5,
+      "tier": "PLANNED",
+      "role": "signature",
+      "exposure": "unknown",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 70.0,
+          "reason": "ECDSA \u2014 algorithm risk 7/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.65,
+          "reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 0.75,
+          "reason": "exposure unknown \u2014 supply a context file to refine"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "blast_radius",
+          "multiplier": 1.15,
+          "reason": "wide blast radius \u2014 shared module"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) via BouncyCastle PQC",
+      "effort_hours": 12,
+      "duplicates": 0,
+      "top_reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\core\\src\\CryptoUtil.java",
+      "rel_path": "core/src/CryptoUtil.java",
+      "line_number": 15,
+      "algorithm": "ECDSA",
+      "algorithm_family": "ECC",
+      "score": 27.5,
+      "tier": "PLANNED",
+      "role": "signature",
+      "exposure": "unknown",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 70.0,
+          "reason": "ECDSA \u2014 algorithm risk 7/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.65,
+          "reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 0.75,
+          "reason": "exposure unknown \u2014 supply a context file to refine"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "blast_radius",
+          "multiplier": 1.15,
+          "reason": "wide blast radius \u2014 shared module"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "ML-DSA-65 (FIPS 204) via BouncyCastle PQC",
+      "effort_hours": 12,
+      "duplicates": 0,
+      "top_reason": "signature \u2014 forgery needs a quantum computer at signing time; not retroactive"
+    },
+    {
+      "file_path": "ecdat-demo\\sample-repo\\infra\\ssh_deploy.py",
+      "rel_path": "infra/ssh_deploy.py",
+      "line_number": 12,
+      "algorithm": "RSA",
+      "algorithm_family": "RSA",
+      "score": 18.0,
+      "tier": "MONITOR",
+      "role": "keygen",
+      "exposure": "internal",
+      "data_sensitivity": "internal",
+      "shelf_life": "medium",
+      "code_reality": "production",
+      "dependents": 1,
+      "controls": [
+        "vpn",
+        "segmentation"
+      ],
+      "hndl": false,
+      "factors": [
+        {
+          "name": "algorithm",
+          "multiplier": 70.0,
+          "reason": "RSA \u2014 algorithm risk 7/10"
+        },
+        {
+          "name": "role",
+          "multiplier": 0.85,
+          "reason": "key generated here \u2014 its use (encrypt vs sign) is not visible at this line"
+        },
+        {
+          "name": "exposure",
+          "multiplier": 0.6,
+          "reason": "internal service \u2014 attacker needs a foothold inside the network first"
+        },
+        {
+          "name": "data",
+          "multiplier": 0.7,
+          "reason": "internal data, medium shelf life"
+        },
+        {
+          "name": "controls",
+          "multiplier": 0.722,
+          "reason": "compensating controls: vpn, segmentation"
+        }
+      ],
+      "inferred": [
+        "role",
+        "exposure",
+        "data_sensitivity",
+        "shelf_life",
+        "code_reality"
+      ],
+      "recommended_replacement": "Ed25519 (interim) \u2192 PQC SSH when OpenSSH adds support",
+      "effort_hours": 6,
+      "duplicates": 0,
+      "top_reason": "internal service \u2014 attacker needs a foothold inside the network first"
+    }
+  ]
+}

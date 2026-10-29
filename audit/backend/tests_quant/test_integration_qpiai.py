@@ -32,6 +32,28 @@ def test_opt_beats_baseline_and_is_hubo():
     assert not opt.crew_overloaded_waves  # crew-feasible
 
 
+def test_remediation_opt_reaches_certified_optimum():
+    from app.migration.remediation import (build_actions, load_findings, plan_exhaustive, plan_opt)
+    acme = Path(__file__).resolve().parents[3] / "examples" / "acme-risk-v2.json"
+    fs = load_findings(acme)
+    acts = build_actions(fs)
+    opt, exact = plan_opt(fs, acts, 40), plan_exhaustive(fs, acts, 40)
+    assert "HUBO" in opt.method and opt.feasible
+    assert opt.residual == pytest.approx(exact.residual, abs=1e-6)
+
+
+def test_remediation_qaoa_menu_contains_optimum():
+    from app.migration.remediation import (build_actions, contested_actions, load_findings,
+                                           plan_alternatives_qaoa, plan_exhaustive, plan_greedy)
+    acme = Path(__file__).resolve().parents[3] / "examples" / "acme-risk-v2.json"
+    fs = load_findings(acme)
+    acts = build_actions(fs)
+    e, g = plan_exhaustive(fs, acts, 40), plan_greedy(fs, acts, 40)
+    q = plan_alternatives_qaoa(fs, acts, 40, contested_actions([e, g], fs, acts))
+    assert q["alternatives"][0]["residual"] == pytest.approx(e.residual, abs=1e-6)
+    assert all(p["feasible"] for p in q["alternatives"])
+
+
 def test_qaoa_matches_classical_optimum():
     from app.migration.quantum_experiment import run_experiment
     out = run_experiment()
