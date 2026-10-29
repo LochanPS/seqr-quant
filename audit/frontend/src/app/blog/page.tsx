@@ -1,9 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { SiteHeader } from "@/components/site-header";
+import { Footer } from "@/components/marketing/footer";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Blog — SeQr Labs",
-  description: "Post-quantum cryptography, compliance, and research from SeQr Labs.",
+export const metadata: Metadata = {
+  title: "Blog",
+  description: "Notes on post-quantum cryptography, Indian compliance and the SeQr research.",
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -16,50 +19,76 @@ interface PostItem {
   published_at: string | null;
 }
 
-async function getPosts(): Promise<PostItem[]> {
+async function getPosts(): Promise<{ posts: PostItem[]; error: boolean }> {
   try {
     const r = await fetch(`${API}/blog`, { cache: "no-store" });
-    if (!r.ok) return [];
-    return r.json();
+    if (!r.ok) return { posts: [], error: true };
+    return { posts: await r.json(), error: false };
   } catch {
-    return [];
+    return { posts: [], error: true };
   }
 }
 
-export default async function BlogIndex() {
-  const posts = await getPosts();
-  return (
-    <main style={{ background: "#000", color: "#EDE7DC", minHeight: "100vh" }}>
-      <div className="mx-auto max-w-3xl px-6 py-24">
-        <Link href="/" style={{ color: "#A65A16" }} className="text-sm font-semibold">← SeQr Labs</Link>
-        <h1 className="font-display mt-6 text-4xl font-semibold tracking-tight">Blog</h1>
-        <p className="mt-3" style={{ color: "rgba(237,231,220,0.62)" }}>
-          Post-quantum cryptography, Indian compliance, and our research.
-        </p>
+const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "Draft");
 
-        {posts.length === 0 ? (
-          <p className="mt-12" style={{ color: "rgba(237,231,220,0.45)" }}>No posts yet.</p>
-        ) : (
-          <div className="mt-12 space-y-8">
-            {posts.map((p) => (
-              <article key={p.slug} className="border-b pb-8" style={{ borderColor: "rgba(237,231,220,0.10)" }}>
-                <Link href={`/blog/${p.slug}`}>
-                  <h2 className="text-2xl font-semibold tracking-tight hover:opacity-80">{p.title}</h2>
-                </Link>
-                {p.published_at && (
-                  <div className="mt-1 text-xs uppercase tracking-wide" style={{ color: "rgba(237,231,220,0.40)" }}>
-                    {new Date(p.published_at).toLocaleDateString()}
-                  </div>
-                )}
-                {p.excerpt && <p className="mt-3" style={{ color: "rgba(237,231,220,0.62)" }}>{p.excerpt}</p>}
-                <Link href={`/blog/${p.slug}`} className="mt-3 inline-block text-sm" style={{ color: "#A65A16" }}>
-                  Read →
-                </Link>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
-    </main>
+export default async function BlogIndex() {
+  const { posts, error } = await getPosts();
+  return (
+    <div className="min-h-dvh bg-bg">
+      <SiteHeader />
+      <main className="mx-auto max-w-page px-5 pb-32 pt-16 sm:px-8">
+        <p className="eyebrow">Notes from SeQr Labs</p>
+        <h1 className="mt-4 font-display text-[clamp(3rem,8vw,6.5rem)] leading-[0.92] text-ink">Blog</h1>
+        <p className="mt-5 max-w-xl text-[17px] text-ink-2">Post-quantum cryptography, the Indian regulatory picture, and what the measurements show.</p>
+
+        <div className="mt-16 border-t border-ink">
+          {error ? (
+            <div className="py-12">
+              <p className="font-display text-2xl text-ink">The blog is unavailable right now.</p>
+              <p className="mt-2 text-ink-2">The publishing service did not answer. Try again in a moment.</p>
+              <Link href="/blog" className="mt-4 inline-block text-sm text-ink link-underline">
+                Retry
+              </Link>
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="py-12">
+              <p className="font-display text-2xl text-ink">No posts yet.</p>
+              <p className="mt-2 text-ink-2">The first notes are being written.</p>
+              <Link href="/" className="mt-4 inline-block text-sm text-ink link-underline">
+                Back to the home page
+              </Link>
+            </div>
+          ) : (
+            <ol>
+              {posts.map((p, i) => (
+                <li key={p.slug} className="border-b border-rule">
+                  <Link href={`/blog/${p.slug}`} className="group grid gap-4 py-8 md:grid-cols-[120px_1fr_200px] md:items-baseline">
+                    <span className="font-mono text-xs text-ink-3">{String(posts.length - i).padStart(3, "0")}</span>
+                    <span>
+                      <span className="block font-display text-[clamp(1.6rem,3vw,2.4rem)] leading-tight text-ink decoration-1 underline-offset-[6px] group-hover:underline">{p.title}</span>
+                      {p.excerpt && <span className="mt-2 block max-w-2xl text-ink-2">{p.excerpt}</span>}
+                      {p.tags.length > 0 && (
+                        <span className="mt-3 flex flex-wrap gap-1.5">
+                          {p.tags.map((t) => (
+                            <span key={t} className="rounded-xs border border-rule px-1.5 py-[1px] font-mono text-[11px] uppercase tracking-[0.06em] text-ink-2">
+                              {t}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-mono text-xs text-ink-3 md:text-right">
+                      {fmt(p.published_at)}
+                      <span className="mt-2 block text-ink">Read</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }

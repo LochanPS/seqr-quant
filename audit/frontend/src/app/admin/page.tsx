@@ -1,140 +1,165 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { api, type AdminOrg } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { errMsg } from "@/lib/utils";
+import { PageHeader, RelTime, Section } from "@/components/ui/page";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Select } from "@/components/ui/field";
+import { EmptyState, ErrorState, TableSkeleton } from "@/components/ui/feedback";
+import { StatusChip } from "@/components/ui/marks";
+import { CountUp, Readout, ReadoutStrip } from "@/components/ui/numbers";
+import { TBody, THead, Table, Td, Th, Tr } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm";
+import { DistributionBars } from "@/components/viz/bars";
+import { OperatorGate } from "@/components/admin/operator-gate";
 
-const PLANS = ["trial", "small", "mid", "large", "enterprise"];
+const PLANS = ["trial", "starter", "professional", "enterprise", "onprem"];
 
-function fmtDate(s: string | null) {
-  return s ? new Date(s).toLocaleDateString() : "—";
-}
-
-export default function AdminPage() {
+function Console() {
   const qc = useQueryClient();
-  const { toast } = useToast();
+  const toast = useToast();
+  const confirm = useConfirm();
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: api.admin.stats });
   const orgs = useQuery({ queryKey: ["admin-orgs"], queryFn: api.admin.orgs });
 
-  const mut = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { plan?: string; status?: string } }) =>
-      api.admin.updateOrg(id, data),
-    onSuccess: () => {
+  const update = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { plan?: string; status?: string } }) => api.admin.updateOrg(id, data),
+    onSuccess: (o) => {
       qc.invalidateQueries({ queryKey: ["admin-orgs"] });
       qc.invalidateQueries({ queryKey: ["admin-stats"] });
-      toast({ title: "Organisation updated", variant: "success" });
+      toast({ title: `${o.name} updated`, description: `${o.plan} plan, ${o.status}.`, tone: "success" });
     },
-    onError: (e) => toast({ title: "Update failed", description: (e as Error).message, variant: "error" }),
+    onError: (e) => toast({ title: "Update failed", description: errMsg(e), tone: "error" }),
   });
 
-  // Operator-gating: the backend returns 403 for non-operators.
-  if (orgs.isError) {
-    const msg = (orgs.error as Error)?.message || "";
-    return (
-      <div className="mx-auto max-w-md py-24 text-center">
-        <h1 className="text-xl font-semibold">Operator access required</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {msg.includes("Operator") ? "This area is for SeQr Labs staff." : msg}
-        </p>
-        <Link href="/dashboard" className="mt-4 inline-block text-sm underline">← Back to dashboard</Link>
-      </div>
-    );
-  }
-
-  const s = stats.data;
-  const statCards = [
-    { label: "Organisations", value: s?.total_orgs },
-    { label: "Users", value: s?.total_users },
-    { label: "Assets", value: s?.total_assets },
-    { label: "Scans", value: s?.total_scans },
-    { label: "Suspended", value: s?.suspended_orgs },
-  ];
+  const s = stats.data!;
+  const planOptions = Array.from(new Set([...PLANS, ...(orgs.data ?? []).map((o) => o.plan)]));
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10">
-      <div className="mb-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Operator Console</h1>
-        <div className="flex gap-3 text-sm">
-          <Link href="/admin/blog" className="underline">Blog / CMS →</Link>
-          <Link href="/dashboard" className="text-muted-foreground underline">Dashboard</Link>
-        </div>
-      </div>
-      <p className="mb-6 text-sm text-muted-foreground">Platform-wide view. SeQr Labs staff only.</p>
-
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
-        {statCards.map((c) => (
-          <Card key={c.label}>
-            <CardContent className="p-4">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">{c.label}</div>
-              <div className="mt-1 text-2xl font-bold">{c.value ?? "—"}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle>Organisations</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto">
+    <div className="space-y-12">
+      <PageHeader
+        eyebrow="SeQr Labs staff"
+        title="Operator console"
+        description="Every organisation on this deployment, with plan and status controls."
+        actions={
+          <>
+            <Button asChild variant="secondary">
+              <Link href="/admin/blog">Blog and CMS</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/dashboard/posture">Dashboard</Link>
+            </Button>
+          </>
+        }
+      />
+      <ReadoutStrip cols={5}>
+        <Readout label="Organisations" value={<CountUp value={s.total_orgs} />} />
+        <Readout label="Users" value={<CountUp value={s.total_users} />} />
+        <Readout label="Assets" value={<CountUp value={s.total_assets} />} />
+        <Readout label="Scans" value={<CountUp value={s.total_scans} />} />
+        <Readout label="Suspended" value={<CountUp value={s.suspended_orgs} />} tone={s.suspended_orgs ? "immediate" : undefined} />
+      </ReadoutStrip>
+      <Section index="01" title="Organisations by plan">
+        <DistributionBars data={Object.entries(s.orgs_by_plan).map(([label, value]) => ({ label, value }))} className="max-w-2xl" />
+      </Section>
+      <Section index="02" title="Organisations">
+        {orgs.isLoading ? (
+          <TableSkeleton cols={8} />
+        ) : orgs.isError ? (
+          <ErrorState message={errMsg(orgs.error)} onRetry={() => orgs.refetch()} />
+        ) : !orgs.data?.length ? (
+          <EmptyState title="No organisations yet" />
+        ) : (
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Users</TableHead>
-                <TableHead className="text-right">Assets</TableHead>
-                <TableHead className="text-right">Scans</TableHead>
-                <TableHead>Last scan</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(orgs.data ?? []).map((o: AdminOrg) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-medium">{o.name}</TableCell>
-                  <TableCell>
-                    <select
+            <THead>
+              <tr>
+                <Th>Name</Th>
+                <Th>Plan</Th>
+                <Th>Status</Th>
+                <Th align="right">Users</Th>
+                <Th align="right">Assets</Th>
+                <Th align="right">Scans</Th>
+                <Th>Last scan</Th>
+                <Th align="right">
+                  <span className="sr-only">Actions</span>
+                </Th>
+              </tr>
+            </THead>
+            <TBody>
+              {orgs.data.map((o) => (
+                <Tr key={o.id}>
+                  <Td label="Name">
+                    <span className="block text-ink">{o.name}</span>
+                    <span className="font-mono text-[11px] text-ink-3">{o.sector ?? "no sector"}</span>
+                  </Td>
+                  <Td label="Plan">
+                    <Select
+                      aria-label={`Plan for ${o.name}`}
                       value={o.plan}
-                      onChange={(e) => mut.mutate({ id: o.id, data: { plan: e.target.value } })}
-                      className="rounded border bg-transparent px-2 py-1 text-sm"
+                      className="h-8 w-40"
+                      disabled={update.isPending}
+                      onChange={(e) => update.mutate({ id: o.id, data: { plan: e.target.value } })}
                     >
-                      {PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={o.status === "suspended" ? "vulnerable" : "safe"}>
-                      {o.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">{o.user_count}</TableCell>
-                  <TableCell className="text-right">{o.asset_count}</TableCell>
-                  <TableCell className="text-right">{o.scan_count}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{fmtDate(o.last_scan_at)}</TableCell>
-                  <TableCell className="text-right">
+                      {planOptions.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </Select>
+                  </Td>
+                  <Td label="Status">
+                    <StatusChip value={o.status} />
+                  </Td>
+                  <Td label="Users" align="right" mono>
+                    {o.user_count}
+                  </Td>
+                  <Td label="Assets" align="right" mono>
+                    {o.asset_count}
+                  </Td>
+                  <Td label="Scans" align="right" mono>
+                    {o.scan_count}
+                  </Td>
+                  <Td label="Last scan" className="text-ink-2">
+                    <RelTime value={o.last_scan_at} />
+                  </Td>
+                  <Td align="right">
                     <Button
                       size="sm"
-                      variant={o.status === "suspended" ? "outline" : "destructive"}
-                      disabled={mut.isPending}
-                      onClick={() =>
-                        mut.mutate({ id: o.id, data: { status: o.status === "suspended" ? "active" : "suspended" } })
-                      }
+                      variant={o.status === "suspended" ? "secondary" : "danger"}
+                      pending={update.isPending && update.variables?.id === o.id && !!update.variables.data.status}
+                      pendingLabel="Saving"
+                      onClick={async () => {
+                        const suspending = o.status !== "suspended";
+                        const ok = await confirm({
+                          title: suspending ? "Suspend this organisation?" : "Reactivate this organisation?",
+                          subject: o.name,
+                          body: suspending ? "Its users are signed out and cannot sign in until it is reactivated." : "Its users can sign in again.",
+                          confirmLabel: suspending ? "Suspend" : "Reactivate",
+                          tone: suspending ? "danger" : "primary",
+                        });
+                        if (ok) update.mutate({ id: o.id, data: { status: suspending ? "suspended" : "active" } });
+                      }}
                     >
                       {o.status === "suspended" ? "Reactivate" : "Suspend"}
                     </Button>
-                  </TableCell>
-                </TableRow>
+                  </Td>
+                </Tr>
               ))}
-            </TableBody>
+            </TBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </Section>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <OperatorGate>
+      <Console />
+    </OperatorGate>
   );
 }

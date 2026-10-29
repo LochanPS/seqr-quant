@@ -1,105 +1,108 @@
 "use client";
 
-import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, AlertTriangle, Info, X } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { IconClose } from "@/components/icons";
 
-type ToastVariant = "default" | "success" | "error";
-interface Toast {
-  id: number;
-  title: string;
-  description?: string;
-  variant: ToastVariant;
-}
+type Tone = "neutral" | "success" | "error";
+type Toast = { id: number; title: string; description?: string; tone: Tone; duration: number };
+type ToastInput = { title: string; description?: string; tone?: Tone; duration?: number };
 
-interface ToastContextValue {
-  toast: (t: {
-    title: string;
-    description?: string;
-    variant?: ToastVariant;
-  }) => void;
-}
-
-const ToastContext = React.createContext<ToastContextValue | null>(null);
-
-let counter = 0;
+const Ctx = createContext<((t: ToastInput) => void) | null>(null);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = React.useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const seq = useRef(0);
 
-  const toast = React.useCallback(
-    (t: { title: string; description?: string; variant?: ToastVariant }) => {
-      const id = ++counter;
-      setToasts((prev) => [
-        ...prev,
-        { id, variant: "default", ...t },
-      ]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((x) => x.id !== id));
-      }, 4200);
-    },
-    []
-  );
-
-  const dismiss = (id: number) =>
-    setToasts((prev) => prev.filter((x) => x.id !== id));
+  const push = useCallback((t: ToastInput) => {
+    const id = ++seq.current;
+    setToasts((xs) => [...xs.slice(-3), { id, tone: "neutral", duration: 5000, ...t }]);
+  }, []);
+  const dismiss = (id: number) => setToasts((xs) => xs.filter((x) => x.id !== id));
 
   return (
-    <ToastContext.Provider value={{ toast }}>
+    <Ctx.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-full max-w-sm flex-col gap-2">
-        <AnimatePresence>
+      <div
+        aria-live="polite"
+        aria-relevant="additions"
+        className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(380px,calc(100vw-2rem))] flex-col gap-2"
+      >
+        <AnimatePresence initial={false}>
           {toasts.map((t) => (
-            <motion.div
-              key={t.id}
-              layout
-              initial={{ opacity: 0, x: 40, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 40, scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className={cn(
-                "pointer-events-auto flex items-start gap-3 rounded-lg border bg-card p-4 shadow-xl",
-                t.variant === "success" && "border-safe/40",
-                t.variant === "error" && "border-vulnerable/40"
-              )}
-            >
-              <div className="mt-0.5">
-                {t.variant === "success" ? (
-                  <CheckCircle2 className="h-5 w-5 text-safe" />
-                ) : t.variant === "error" ? (
-                  <AlertTriangle className="h-5 w-5 text-vulnerable" />
-                ) : (
-                  <Info className="h-5 w-5 text-quantum" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{t.title}</p>
-                {t.description && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t.description}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => dismiss(t.id)}
-                className="text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </motion.div>
+            <ToastItem key={t.id} toast={t} onDone={() => dismiss(t.id)} />
           ))}
         </AnimatePresence>
       </div>
-    </ToastContext.Provider>
+    </Ctx.Provider>
+  );
+}
+
+function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
+  const [paused, setPaused] = useState(false);
+  const remaining = useRef(toast.duration);
+  const startedAt = useRef(Date.now());
+
+  useEffect(() => {
+    if (paused) return;
+    startedAt.current = Date.now();
+    const t = setTimeout(onDone, remaining.current);
+    return () => {
+      clearTimeout(t);
+      remaining.current -= Date.now() - startedAt.current;
+    };
+  }, [paused, onDone]);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, x: 24 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 24, transition: { duration: 0.16 } }}
+      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      role={toast.tone === "error" ? "alert" : "status"}
+      className={cn(
+        "pointer-events-auto relative overflow-hidden border bg-bg",
+        toast.tone === "error" ? "border-immediate" : toast.tone === "success" ? "border-safe" : "border-ink"
+      )}
+    >
+      <div className="flex items-start gap-3 px-4 py-3">
+        <span
+          aria-hidden
+          className={cn(
+            "mt-1.5 h-2 w-2 shrink-0",
+            toast.tone === "error" ? "bg-immediate" : toast.tone === "success" ? "bg-safe" : "bg-ink"
+          )}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-ink">{toast.title}</p>
+          {toast.description && <p className="mt-0.5 break-words text-[13px] text-ink-2">{toast.description}</p>}
+        </div>
+        <button
+          onClick={onDone}
+          aria-label="Dismiss notification"
+          className="-mr-1 inline-flex h-6 w-6 items-center justify-center text-ink-3 transition-colors duration-micro hover:text-ink"
+        >
+          <IconClose size={14} />
+        </button>
+      </div>
+      <span
+        aria-hidden
+        className="absolute bottom-0 left-0 h-px w-full origin-left bg-ink"
+        style={{
+          animation: `rule-shrink ${toast.duration}ms linear forwards`,
+          animationPlayState: paused ? "paused" : "running",
+        }}
+      />
+    </motion.div>
   );
 }
 
 export function useToast() {
-  const ctx = React.useContext(ToastContext);
-  if (!ctx) {
-    // Fallback no-op so components don't crash outside provider.
-    return { toast: () => {} };
-  }
-  return ctx;
+  const push = useContext(Ctx);
+  if (!push) throw new Error("useToast must be used inside ToastProvider");
+  return push;
 }

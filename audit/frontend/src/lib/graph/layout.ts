@@ -1,6 +1,6 @@
 // Deterministic layered layout for the crypto-asset graph via dagre.
 //
-// Infra topology reads best as a left-to-right flow (edge → origin → load balancer → host →
+// Infra topology reads best as a left-to-right flow (edge to origin to load balancer to host to
 // HSM), so we default to "LR". Layout is a pure function of the model, so callers can memoize
 // on a structural key and skip recompute on pan/zoom/selection.
 

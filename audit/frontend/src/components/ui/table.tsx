@@ -1,80 +1,135 @@
-import * as React from "react";
+"use client";
+
 import { cn } from "@/lib/utils";
+import { IconSortAsc, IconSortDesc } from "@/components/icons";
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props}
-    />
-  </div>
-));
-Table.displayName = "Table";
+// Tables are set like a printed ledger: hairline rows, mono heads, no zebra fill.
+// On narrow screens rows stack: each <Td label="..."> shows its label inline.
 
-const TableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
-));
-TableHeader.displayName = "TableHeader";
+export function Table({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className="w-full overflow-x-auto">
+      <table className={cn("w-full border-collapse text-sm", className)}>{children}</table>
+    </div>
+  );
+}
 
-const TableBody = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
-    {...props}
-  />
-));
-TableBody.displayName = "TableBody";
+export function THead({ children }: { children: React.ReactNode }) {
+  return <thead className="hidden border-b border-ink md:table-header-group">{children}</thead>;
+}
 
-const TableRow = React.forwardRef<
-  HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...props}
-  />
-));
-TableRow.displayName = "TableRow";
+export function TBody({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <tbody className={className}>{children}</tbody>;
+}
 
-const TableHead = React.forwardRef<
-  HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <th
-    ref={ref}
-    className={cn(
-      "h-11 px-4 text-left align-middle text-xs font-medium uppercase tracking-wide text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      className
-    )}
-    {...props}
-  />
-));
-TableHead.displayName = "TableHead";
+export function Tr({
+  children,
+  className,
+  onClick,
+  ...rest
+}: React.HTMLAttributes<HTMLTableRowElement> & { children: React.ReactNode }) {
+  return (
+    <tr
+      onClick={onClick}
+      className={cn(
+        "grid grid-cols-1 gap-1 border-b border-rule py-3 md:table-row md:py-0",
+        onClick && "cursor-pointer transition-colors duration-micro hover:bg-surface",
+        className
+      )}
+      {...rest}
+    >
+      {children}
+    </tr>
+  );
+}
 
-const TableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    {...props}
-  />
-));
-TableCell.displayName = "TableCell";
+export function Th({
+  children,
+  className,
+  align = "left",
+  sort,
+  onSort,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  align?: "left" | "right";
+  sort?: "asc" | "desc" | null;
+  onSort?: () => void;
+}) {
+  const inner = (
+    <span className={cn("inline-flex items-center gap-1", align === "right" && "flex-row-reverse")}>
+      {children}
+      {onSort && (sort === "asc" ? <IconSortAsc size={14} /> : sort === "desc" ? <IconSortDesc size={14} /> : null)}
+    </span>
+  );
+  return (
+    <th
+      scope="col"
+      aria-sort={sort === "asc" ? "ascending" : sort === "desc" ? "descending" : undefined}
+      className={cn("eyebrow whitespace-nowrap px-3 py-2.5 font-normal", align === "right" ? "text-right" : "text-left", className)}
+    >
+      {onSort ? (
+        <button onClick={onSort} className="uppercase transition-colors duration-micro hover:text-ink">
+          {inner}
+        </button>
+      ) : (
+        inner
+      )}
+    </th>
+  );
+}
 
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell };
+export function Td({
+  children,
+  className,
+  label,
+  align = "left",
+  mono,
+  colSpan,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  label?: string;
+  align?: "left" | "right";
+  mono?: boolean;
+  colSpan?: number;
+}) {
+  return (
+    <td
+      colSpan={colSpan}
+      className={cn(
+        "flex items-baseline justify-between gap-4 px-0 align-middle md:table-cell md:px-3 md:py-3",
+        align === "right" && "md:text-right",
+        mono && "font-mono text-[13px] tabular",
+        className
+      )}
+    >
+      {label && <span className="eyebrow shrink-0 md:hidden">{label}</span>}
+      <span className={cn("min-w-0 text-right", align === "left" && "md:text-left")}>{children}</span>
+    </td>
+  );
+}
+
+/** Generic sort state helper for client-side tables. */
+export function nextSort<K extends string>(
+  current: { key: K; dir: "asc" | "desc" } | null,
+  key: K
+): { key: K; dir: "asc" | "desc" } | null {
+  if (!current || current.key !== key) return { key, dir: "asc" };
+  if (current.dir === "asc") return { key, dir: "desc" };
+  return null;
+}
+
+export function sortRows<T>(rows: T[], sort: { key: string; dir: "asc" | "desc" } | null, get: (r: T, k: string) => unknown) {
+  if (!sort) return rows;
+  const out = [...rows].sort((a, b) => {
+    const x = get(a, sort.key);
+    const y = get(b, sort.key);
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    if (typeof x === "number" && typeof y === "number") return x - y;
+    return String(x).localeCompare(String(y), undefined, { numeric: true });
+  });
+  return sort.dir === "desc" ? out.reverse() : out;
+}

@@ -1,4 +1,4 @@
-// Crypto-asset graph — client-side model + adapter.
+// Crypto-asset graph, client-side model + adapter.
 //
 // Single source of truth is the existing /graph API. This module assembles a normalized
 // { nodes, links } model from those endpoints and derives per-node display state (quantum
@@ -6,7 +6,7 @@
 //
 // v1 has no bulk edges endpoint, so edges are fanned out per asset (one /graph/assets/{id}/edges
 // call each) and deduped. The fetch surface is abstracted behind GraphSource: adding a future
-// GET /graph/edges is a drop-in replacement of `edges()` — no renderer/model change.
+// GET /graph/edges is a drop-in replacement of `edges()`, no renderer/model change.
 
 import { api } from "@/lib/api";
 import type {
@@ -34,7 +34,7 @@ export interface GraphNode {
   worstSeverity: Severity | null;
   quantumStatus: QuantumRollup;
   hasConflict: boolean;
-  degree: number; // edge count — used for sizing / clustering heuristics
+  degree: number; // edge count, used for sizing / clustering heuristics
 }
 
 export interface GraphLink {
@@ -51,7 +51,7 @@ export interface GraphModel {
   links: GraphLink[];
 }
 
-// Fetch surface — the seam where a bulk endpoint drops in later.
+// Fetch surface, the seam where a bulk endpoint drops in later.
 export interface GraphSource {
   assets(): Promise<GraphAsset[]>;
   componentStates(): Promise<ComponentStateRow[]>;
@@ -101,7 +101,7 @@ function worstSeverity(violations: ViolationRow[]): Severity | null {
   return worst;
 }
 
-// Pure assembly — no I/O, unit-testable.
+// Pure assembly, no I/O, unit-testable.
 export function assembleGraph(
   assets: GraphAsset[],
   states: ComponentStateRow[],

@@ -1,53 +1,57 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Schibsted_Grotesk } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { QueryProvider } from "@/components/QueryProvider";
-import { ToastProvider } from "@/components/ui/toast";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Providers } from "@/components/providers";
 
-const geist = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist",
-  weight: "100 900",
-});
-const mono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-mono",
-  weight: "100 900",
-});
-// Display typeface for marketing headlines (scoped via .font-display utility).
-const display = Schibsted_Grotesk({
+const display = Fraunces({
   subsets: ["latin"],
-  weight: ["400", "500", "700", "800", "900"],
+  axes: ["opsz", "SOFT", "WONK"],
   variable: "--font-display",
   display: "swap",
 });
 
+const sans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const mono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "SeQr Labs — Quantum Cryptography Audit",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  title: {
+    default: "SeQr · Post-quantum cryptography audit",
+    template: "%s · SeQr",
+  },
   description:
-    "Discover, score, and remediate quantum-vulnerable cryptography across your infrastructure.",
+    "SeQr finds every quantum-vulnerable system in your infrastructure, maps it to Indian compliance requirements, and gives you a migration roadmap.",
+  openGraph: {
+    title: "SeQr · Post-quantum cryptography audit",
+    description:
+      "Find every quantum-vulnerable system, build the CBOM in minutes, and plan the migration.",
+    type: "website",
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#EFEAE0" },
+    { media: "(prefers-color-scheme: dark)", color: "#13120F" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geist.variable} ${mono.variable} ${display.variable} font-sans antialiased`}
-      >
-        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
-          <QueryProvider>
-            <TooltipProvider delayDuration={200}>
-              <ToastProvider>{children}</ToastProvider>
-            </TooltipProvider>
-          </QueryProvider>
-        </ThemeProvider>
+      <body className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

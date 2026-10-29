@@ -16,72 +16,165 @@ import type {
   RiskScore,
   Roadmap,
   Scan,
+  User,
 } from "./types";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export const TOKEN_KEY = "seqr_token";
+export const REFRESH_KEY = "seqr_refresh";
 
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+/** An HTTP failure carrying the status, so callers can tell 403/404 from real errors. */
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
 }
 
-export function setToken(token: string) {
-  if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token);
+export function isStatus(err: unknown, ...codes: number[]): boolean {
+  return err instanceof ApiError && codes.includes(err.status);
+}
+
+function store(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function getToken(): string | null {
+  return store()?.getItem(TOKEN_KEY) ?? null;
+}
+
+export function getRefreshToken(): string | null {
+  return store()?.getItem(REFRESH_KEY) ?? null;
+}
+
+export function setToken(token: string, refresh?: string | null) {
+  const s = store();
+  if (!s) return;
+  s.setItem(TOKEN_KEY, token);
+  if (refresh) s.setItem(REFRESH_KEY, refresh);
 }
 
 export function clearToken() {
-  if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
+  const s = store();
+  if (!s) return;
+  s.removeItem(TOKEN_KEY);
+  s.removeItem(REFRESH_KEY);
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname;
+  if (path.startsWith("/login") || path.startsWith("/register")) return;
+  const next = encodeURIComponent(path + window.location.search);
+  window.location.href = `/login?next=${next}`;
+}
+
+// One refresh in flight at a time; concurrent 401s wait on the same promise.
+let refreshing: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  const rt = getRefreshToken();
+  if (!rt) return false;
+  if (!refreshing) {
+    refreshing = (async () => {
+      try {
+        const res = await fetch(`${BASE}/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: rt }),
+        });
+        if (!res.ok) return false;
+        const data = (await res.json()) as { access_token?: string };
+        if (!data.access_token) return false;
+        setToken(data.access_token);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        setTimeout(() => {
+          refreshing = null;
+        }, 0);
+      }
+    })();
+  }
+  return refreshing;
+}
+
+async function readError(res: Response): Promise<string> {
+  let msg = await res.text();
+  try {
+    const parsed = JSON.parse(msg);
+    const d = parsed.detail ?? parsed.message ?? parsed.error;
+    if (typeof d === "string") msg = d;
+    else if (Array.isArray(d)) msg = d.map((x) => x?.msg ?? String(x)).join("; ");
+    else if (d) msg = JSON.stringify(d);
+  } catch {
+    /* keep raw text */
+  }
+  return msg || `Request failed (${res.status})`;
+}
+
+async function request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
+  } catch {
+    throw new ApiError("Cannot reach the SeQr API. Check that the backend is running.", 0);
+  }
 
-  if (res.status === 401) {
+  if (res.status === 401 && !path.startsWith("/auth/login") && !path.startsWith("/auth/mfa/login")) {
+    if (!retried && (await tryRefresh())) return request<T>(path, options, true);
     clearToken();
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-      window.location.href = "/login";
-    }
-    throw new Error("Unauthorized");
+    redirectToLogin();
+    throw new ApiError("Your session has ended. Sign in again.", 401);
   }
 
-  if (!res.ok) {
-    let msg = await res.text();
-    try {
-      const parsed = JSON.parse(msg);
-      msg = parsed.detail || msg;
-    } catch {
-      /* keep raw text */
-    }
-    throw new Error(msg || `Request failed (${res.status})`);
-  }
-
+  if (!res.ok) throw new ApiError(await readError(res), res.status);
   if (res.status === 204) return undefined as T;
-  return res.json();
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
+
+const qs = (params: Record<string, string | number | null | undefined>) => {
+  const entries = Object.entries(params).filter(([, v]) => v != null && v !== "");
+  if (!entries.length) return "";
+  return "?" + new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString();
+};
 
 export const api = {
   auth: {
     register: (data: RegisterData) =>
-      request<AuthResponse>("/auth/register", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      request<AuthResponse>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
     login: (data: LoginData) =>
-      request<AuthResponse>("/auth/login", {
+      request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+    mfaLogin: (temp_token: string, totp_code: string) =>
+      request<AuthResponse>("/auth/mfa/login", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ temp_token, totp_code }),
       }),
+    mfaSetup: () => request<{ secret: string; qr_code: string; uri: string }>("/auth/mfa/setup", { method: "POST" }),
+    mfaVerify: (totp_code: string) =>
+      request<{ mfa_enabled: boolean }>("/auth/mfa/verify", {
+        method: "POST",
+        body: JSON.stringify({ totp_code }),
+      }),
+    logout: () => request<{ status: string }>("/auth/logout", { method: "POST" }),
     apiKeys: {
       list: () => request<ApiKey[]>("/auth/api-keys"),
       create: (name: string) =>
@@ -89,47 +182,42 @@ export const api = {
           method: "POST",
           body: JSON.stringify({ name, scopes: [] }),
         }),
-      revoke: (id: string) =>
-        request<void>(`/auth/api-keys/${id}`, { method: "DELETE" }),
+      revoke: (id: string) => request<void>(`/auth/api-keys/${id}`, { method: "DELETE" }),
     },
   },
   org: {
     get: () => request<Org>("/org"),
     update: (data: { name?: string; sector?: string }) =>
       request<Org>("/org", { method: "PATCH", body: JSON.stringify(data) }),
+    users: () => request<User[]>("/org/users"),
+    invite: (email: string, role: string) =>
+      request<InviteResult>("/org/users/invite", {
+        method: "POST",
+        body: JSON.stringify({ email, role }),
+      }),
+    setRole: (userId: string, role: string) =>
+      request<User>(`/org/users/${userId}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
   },
   assets: {
     list: () => request<Asset[]>("/assets"),
     get: (id: string) => request<Asset>(`/assets/${id}`),
     create: (data: CreateAsset) =>
-      request<Asset>("/assets", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      request<Asset>("/assets", { method: "POST", body: JSON.stringify(data) }),
     scan: (id: string) =>
-      request<{ scan_id: string; status: string }>(`/assets/${id}/scan`, {
+      request<{ scan_id: string; status: string }>(`/assets/${id}/scan`, { method: "POST" }),
+    scanAll: () =>
+      request<{ queued: number; scans: { scan_id?: string; asset_id?: string }[] }>("/assets/scan-all", {
         method: "POST",
       }),
-    delete: (id: string) =>
-      request<void>(`/assets/${id}`, { method: "DELETE" }),
+    delete: (id: string) => request<void>(`/assets/${id}`, { method: "DELETE" }),
   },
   scans: {
     list: () => request<Scan[]>("/scans"),
     get: (id: string) => request<Scan>(`/scans/${id}`),
   },
   cbom: {
-    list: (params?: CBOMParams) =>
-      request<CBOMResponse>(
-        "/cbom" +
-          (params
-            ? "?" +
-              new URLSearchParams(
-                Object.fromEntries(
-                  Object.entries(params).filter(([, v]) => v != null && v !== "")
-                ) as Record<string, string>
-              )
-            : "")
-      ),
+    list: (params?: CBOMParams & { location?: string }) =>
+      request<CBOMResponse>("/cbom" + qs((params ?? {}) as Record<string, string>)),
     summary: () => request<CBOMSummary>("/cbom/summary"),
     patch: (id: string, migration_status: string) =>
       request<Component>(`/cbom/${id}`, {
@@ -147,14 +235,31 @@ export const api = {
   reports: {
     list: () => request<Report[]>("/reports"),
     generate: (type: string) =>
-      request<Report>("/reports/generate", {
-        method: "POST",
-        body: JSON.stringify({ type }),
-      }),
+      request<Report>("/reports/generate", { method: "POST", body: JSON.stringify({ type }) }),
     downloadUrl: (id: string) => `${BASE}/reports/${id}/download`,
+  },
+  ci: {
+    list: () => request<CIReport[]>("/ci/reports"),
+    get: (id: string) => request<CIReportDetail>(`/ci/reports/${id}`),
+  },
+  audit: {
+    list: (params: { actor?: string; action?: string; since?: string; until?: string; limit?: number; offset?: number }) =>
+      request<AuditEvent[]>("/audit" + qs(params)),
+  },
+  sso: {
+    get: () => request<OIDCConfig>("/sso/config"),
+    put: (data: OIDCConfigIn) => request<OIDCConfig>("/sso/config", { method: "PUT", body: JSON.stringify(data) }),
+    remove: () => request<void>("/sso/config", { method: "DELETE" }),
+  },
+  saml: {
+    get: () => request<SAMLConfig>("/saml/config"),
+    put: (data: SAMLConfigIn) => request<SAMLConfig>("/saml/config", { method: "PUT", body: JSON.stringify(data) }),
+    remove: () => request<void>("/saml/config", { method: "DELETE" }),
+    metadataUrl: (providerId?: string | null) => `${BASE}/saml/metadata${providerId ? `?provider_id=${providerId}` : ""}`,
   },
   graph: {
     assets: () => request<GraphAsset[]>("/graph/assets"),
+    asset: (id: string) => request<GraphAsset>(`/graph/assets/${id}`),
     assetEdges: (id: string) => request<GraphEdge[]>(`/graph/assets/${id}/edges`),
     assetState: (id: string) => request<ComponentStateRow[]>(`/graph/assets/${id}/state`),
     componentStates: () => request<ComponentStateRow[]>("/graph/component-states"),
@@ -164,23 +269,15 @@ export const api = {
     attestations: () => request<AttestationRow[]>("/graph/attestations"),
     events: () => request<EventRow[]>("/graph/events"),
     generateAttestation: () =>
-      request<{ attestation_id: string; artifact: unknown }>("/graph/attestations", {
-        method: "POST",
-      }),
+      request<{ attestation_id: string; artifact: unknown }>("/graph/attestations", { method: "POST" }),
     attestationDownloadUrl: (id: string) => `${BASE}/graph/attestations/${id}/download`,
     attestationCertUrl: (id: string) => `${BASE}/graph/attestations/${id}/certificate.pdf`,
   },
   remediation: {
     plan: (body: RemediationRequest) =>
-      request<RemediationResult>("/remediation/plan", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+      request<RemediationResult>("/remediation/plan", { method: "POST", body: JSON.stringify(body) }),
     planInfra: (body: Omit<RemediationRequest, "report">) =>
-      request<RemediationResult>("/remediation/plan-infra", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+      request<RemediationResult>("/remediation/plan-infra", { method: "POST", body: JSON.stringify(body) }),
   },
   migration: {
     pipeline: () => request<PipelineStatus>("/migration/pipeline"),
@@ -208,8 +305,7 @@ export const api = {
           method: "POST",
           body: JSON.stringify({ name, expires_at: expires_at ?? null }),
         }),
-      revoke: (id: string) =>
-        request<void>(`/agent/credentials/${id}`, { method: "DELETE" }),
+      revoke: (id: string) => request<void>(`/agent/credentials/${id}`, { method: "DELETE" }),
     },
     coverage: () => request<AgentCoverage>("/agent/coverage"),
   },
@@ -223,10 +319,93 @@ export const api = {
       request<BlogPost>("/admin/posts", { method: "POST", body: JSON.stringify(data) }),
     updatePost: (id: string, data: Partial<BlogPost>) =>
       request<BlogPost>(`/admin/posts/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
-    deletePost: (id: string) =>
-      request<void>(`/admin/posts/${id}`, { method: "DELETE" }),
+    deletePost: (id: string) => request<void>(`/admin/posts/${id}`, { method: "DELETE" }),
   },
 };
+
+export interface InviteResult {
+  email: string;
+  role: string;
+  temporary_password: string;
+  must_change_password: boolean;
+}
+
+export interface CIReport {
+  id: string;
+  repo: string;
+  pr_number: number | null;
+  commit_sha: string | null;
+  branch: string | null;
+  source: string;
+  findings_count: number;
+  summary: Record<string, unknown> | null;
+  created_at: string;
+}
+export interface CIReportDetail extends CIReport {
+  findings: Record<string, unknown>[];
+}
+
+export interface AuditEvent {
+  id: string;
+  org_id: string | null;
+  actor: string | null;
+  actor_type: string;
+  action: string;
+  method: string | null;
+  path: string | null;
+  status_code: number | null;
+  target: string | null;
+  ip: string | null;
+  detail: unknown;
+  at: string;
+}
+
+export interface OIDCConfigIn {
+  issuer: string;
+  client_id: string;
+  client_secret?: string | null;
+  display_name: string;
+  discovery_url?: string | null;
+  scopes: string;
+  groups_claim: string;
+  group_role_map: Record<string, string>;
+  default_role: string;
+  email_domain?: string | null;
+  auto_provision: boolean;
+  enabled: boolean;
+}
+export interface OIDCConfig extends Partial<Omit<OIDCConfigIn, "client_secret">> {
+  configured: boolean;
+  id: string | null;
+  has_client_secret: boolean;
+  redirect_uri: string | null;
+  login_url: string | null;
+}
+
+export interface SAMLConfigIn {
+  idp_entity_id: string;
+  idp_sso_url: string;
+  idp_x509_cert: string;
+  idp_slo_url?: string | null;
+  sp_entity_id?: string | null;
+  display_name: string;
+  want_assertions_signed: boolean;
+  name_id_format?: string | null;
+  email_attribute?: string | null;
+  groups_attribute: string;
+  group_role_map: Record<string, string>;
+  default_role: string;
+  email_domain?: string | null;
+  auto_provision: boolean;
+  enabled: boolean;
+}
+export interface SAMLConfig extends Partial<SAMLConfigIn> {
+  configured: boolean;
+  id: string | null;
+  acs_url?: string | null;
+  metadata_url?: string | null;
+  login_url?: string | null;
+}
 
 export interface AdminOrg {
   id: string;
@@ -264,7 +443,7 @@ export interface BlogPost {
   created_at: string;
 }
 
-// --- discovery-agent plane (PRD 15) -----------------------------------------
+// Discovery-agent plane (PRD 15)
 export interface AgentCredential {
   id: string;
   name: string;
@@ -274,7 +453,7 @@ export interface AgentCredential {
   created_at: string;
 }
 export interface AgentCredentialCreated extends AgentCredential {
-  key: string; // raw sq_live_ key — shown exactly once
+  key: string; // raw sq_live_ key, shown exactly once
 }
 export interface AgentCoverage {
   agent: string | null;
@@ -285,7 +464,7 @@ export interface AgentCoverage {
   last_event_at: string | null;
 }
 
-// --- platform spine + migration (PRD 13/14) ---------------------------------
+// Platform spine + migration (PRD 13/14)
 export interface GraphAsset {
   id: string;
   type: string;
@@ -401,7 +580,7 @@ export interface VerifyReport {
 
 export { BASE as API_BASE };
 
-// ── Remediation planner (risk v2 + QpiAI Opt) ────────────────────────────────
+// Remediation planner (risk v2 + QpiAI Opt)
 
 export interface RemediationRequest {
   report?: Record<string, unknown> | null;
@@ -471,7 +650,7 @@ export interface RemediationResult {
   notes: string[];
 }
 
-// ── Context-aware risk (risk engine v2) over infrastructure slots ────────────
+// Context-aware risk (risk engine v2) over infrastructure slots
 
 export interface ContextRiskComponent {
   asset_id: string | null;

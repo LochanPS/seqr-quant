@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
   } catch (e) {
-    // fetch itself failed (backend unreachable / DNS / timeout) — surface it, don't 500 blindly.
+    // fetch itself failed (backend unreachable / DNS / timeout), surface it, don't 500 blindly.
     const message = e instanceof Error ? e.message : "Scan backend unreachable.";
     return Response.json({ error: "backend_unreachable", message }, { status: 502 });
   }

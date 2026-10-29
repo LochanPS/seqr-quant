@@ -2,138 +2,349 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------------------------
+   Tokens. RGB channels so Tailwind alpha modifiers work: bg-ink/10, border-rule/60.
+   Paper is the light theme, carbon the dark one. Severity hues carry data meaning only.
+   ------------------------------------------------------------------------------------ */
 @layer base {
   :root {
-    /* shadcn neutral (slate) — light */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 28 77% 37%; /* burnt amber #A65A16 — unified with the landing brand */
-    --primary-foreground: 0 0% 0%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 94%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 347 89% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 28 77% 37%;
-    --radius: 0.7rem;
+    --bg: 239 234 224;
+    --surface: 230 224 211;
+    --surface-2: 220 213 198;
+    --ink: 22 20 15;
+    --ink-2: 74 70 61;
+    --ink-3: 108 103 92;
+    --rule: 201 193 176;
+    --accent: 166 90 22;
 
-    /* Brand accent palette (rgb triplets) */
-    --quantum: 166 90 22; /* SeQr burnt amber #A65A16 — matches marketing-tokens */
-    --safe: 16 185 129; /* emerald-500 */
-    --vulnerable: 244 63 94; /* rose-500 */
-    --urgent: 245 158 11; /* amber-500 */
-    --planned: 139 92 246; /* violet-500 */
+    --immediate: 178 58 30;
+    --urgent: 150 98 20;
+    --planned: 74 99 120;
+    --safe: 63 107 74;
+    --hybrid: 47 95 99;
+
+    color-scheme: light;
   }
 
-  .dark {
-    /* SeQr design system — UNIFIED with the landing page (marketing-tokens.ts):
-       true black #000000, warm parchment ink #EDE7DC, burnt-amber accent #A65A16,
-       parchment-alpha borders/surfaces. Same look as the marketing sections. */
-    --background: 0 0% 0%; /* #000000 — true black, matches marketing.bg */
-    --foreground: 39 32% 90%; /* #EDE7DC — parchment ink */
-    --card: 40 10% 6%; /* surface — parchment @ ~0.04 lifted off pure black, warm */
-    --card-foreground: 39 32% 90%;
-    --popover: 40 10% 6%;
-    --popover-foreground: 39 32% 90%;
-    --primary: 28 77% 37%; /* accent #A65A16 */
-    --primary-foreground: 0 0% 0%; /* black text on amber, as GlowButton does */
-    --secondary: 40 6% 11%;
-    --secondary-foreground: 39 32% 90%;
-    --muted: 40 6% 11%;
-    --muted-foreground: 38 6% 57%; /* EDE7DC @ ~0.62 */
-    --accent: 28 45% 11%; /* accentSoft — burnt-amber tint (active nav / hovers) */
-    --accent-foreground: 39 32% 90%;
-    --destructive: 347 89% 60%; /* rose — semantic, unchanged */
-    --destructive-foreground: 210 40% 98%;
-    --border: 36 5% 10%; /* EDE7DC @ ~0.10 — warm hairline */
-    --input: 34 6% 15%; /* EDE7DC @ ~0.18 — borderStrong */
-    --ring: 28 77% 37%; /* accent */
+  [data-theme="dark"] {
+    --bg: 19 18 15;
+    --surface: 27 26 22;
+    --surface-2: 36 34 29;
+    --ink: 236 230 217;
+    --ink-2: 181 174 159;
+    --ink-3: 140 133 120;
+    --rule: 58 55 47;
+    --accent: 208 138 62;
 
-    --quantum: 166 90 22; /* SeQr burnt amber #A65A16 — matches marketing-tokens */
-    --safe: 16 185 129;
-    --vulnerable: 244 63 94;
-    --urgent: 245 158 11;
-    --planned: 139 92 246;
+    --immediate: 214 98 68;
+    --urgent: 207 150 64;
+    --planned: 128 156 180;
+    --safe: 112 160 122;
+    --hybrid: 98 158 162;
+
+    color-scheme: dark;
   }
 
   * {
-    @apply border-border;
+    @apply border-rule;
   }
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
-}
 
-@layer utilities {
-  .text-balance {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-feature-settings: "ss01", "cv01";
+  }
+
+  /* A 240ms crossfade when the theme switches; nothing else animates color globally. */
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: background-color 240ms cubic-bezier(0.2, 0, 0, 1),
+      border-color 240ms cubic-bezier(0.2, 0, 0, 1), color 240ms cubic-bezier(0.2, 0, 0, 1),
+      fill 240ms cubic-bezier(0.2, 0, 0, 1), stroke 240ms cubic-bezier(0.2, 0, 0, 1) !important;
+  }
+
+  ::selection {
+    background: rgb(var(--accent));
+    color: rgb(var(--bg));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+    border-radius: 0;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--rule)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--rule));
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
     text-wrap: balance;
   }
-  /* Marketing display typeface (Bricolage Grotesque) — marketing headlines. */
-  .font-display {
-    font-family: var(--font-display), system-ui, sans-serif;
-    letter-spacing: -0.02em;
+  p {
+    text-wrap: pretty;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
   }
 }
 
-/* Hero headline left-to-right mask reveal. CSS (not JS) so it always lands fully
-   open, and is suppressed entirely for reduced-motion users. */
-@keyframes reveal-ltr {
+@layer components {
+  /* Small uppercase mono label used above titles and on table heads. */
+  .eyebrow {
+    @apply font-mono text-eyebrow uppercase text-ink-3;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Display serif tuned to look engraved: high optical size, no soft or wonky axes. */
+  .font-display {
+    font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+  }
+
+  .hairline {
+    @apply border-rule;
+  }
+
+  /* Lines that rise out of a mask (SplitText). Padding keeps descenders unclipped. */
+  .split-line-mask {
+    padding-bottom: 0.14em;
+    margin-bottom: -0.14em;
+  }
+
+  .link-underline {
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: rgb(var(--rule));
+    transition: text-decoration-color 120ms cubic-bezier(0.2, 0, 0, 1),
+      color 120ms cubic-bezier(0.2, 0, 0, 1);
+  }
+  .link-underline:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* Rendered markdown for blog posts and the CMS preview. */
+  .prose-record {
+    @apply text-ink-2;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+  .prose-record > * + * {
+    margin-top: 1.1em;
+  }
+  .prose-record h1,
+  .prose-record h2,
+  .prose-record h3 {
+    @apply font-display text-ink;
+    font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+    line-height: 1.15;
+    margin-top: 2em;
+  }
+  .prose-record h1 {
+    font-size: 2rem;
+  }
+  .prose-record h2 {
+    font-size: 1.6rem;
+  }
+  .prose-record h3 {
+    font-size: 1.3rem;
+  }
+  .prose-record a {
+    @apply text-ink link-underline;
+  }
+  .prose-record strong {
+    @apply text-ink font-semibold;
+  }
+  .prose-record code {
+    @apply font-mono text-[0.9em] bg-surface px-1 text-ink;
+  }
+  .prose-record pre {
+    @apply font-mono text-sm bg-surface border border-rule p-4 overflow-x-auto text-ink;
+  }
+  .prose-record pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose-record blockquote {
+    @apply border-l border-ink pl-5 text-ink italic;
+  }
+  .prose-record ul {
+    list-style: square;
+    padding-left: 1.25em;
+  }
+  .prose-record ol {
+    list-style: decimal;
+    padding-left: 1.25em;
+  }
+  .prose-record li + li {
+    margin-top: 0.35em;
+  }
+  .prose-record table {
+    @apply w-full border-collapse text-sm;
+  }
+  .prose-record th,
+  .prose-record td {
+    @apply border-b border-rule py-2 pr-4 text-left;
+  }
+  .prose-record th {
+    @apply eyebrow;
+  }
+  .prose-record hr {
+    @apply border-rule;
+  }
+}
+
+/* Radix overlay states. Dialogs scale from 0.98; sheets slide on the press ease. */
+@keyframes overlay-in {
   from {
-    clip-path: inset(0 100% 0 0);
+    opacity: 0;
   }
   to {
-    clip-path: inset(0 0 0 0);
+    opacity: 1;
   }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .reveal-ltr {
-    animation: reveal-ltr 0.7s ease-out both;
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes dialog-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+@keyframes sheet-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes sheet-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes sheet-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes sheet-out-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes rule-shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@layer utilities {
-  .glass {
-    background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-  .quantum-grid {
-    background-image:
-      linear-gradient(to right, rgb(var(--quantum) / 0.08) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(var(--quantum) / 0.08) 1px, transparent 1px);
-    background-size: 44px 44px;
-  }
-  .text-gradient-quantum {
-    background: linear-gradient(135deg, rgb(var(--quantum)), rgb(var(--planned)));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .glow-quantum {
-    box-shadow: 0 0 0 1px rgb(var(--quantum) / 0.3), 0 0 24px -2px rgb(var(--quantum) / 0.35);
-  }
+.overlay[data-state="open"] {
+  animation: overlay-in 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+.overlay[data-state="closed"] {
+  animation: overlay-out 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+.dialog-panel[data-state="open"] {
+  animation: dialog-in 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+.dialog-panel[data-state="closed"] {
+  animation: dialog-out 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+.sheet-right[data-state="open"] {
+  animation: sheet-in-right 380ms cubic-bezier(0.34, 1.12, 0.64, 1);
+}
+.sheet-right[data-state="closed"] {
+  animation: sheet-out-right 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+.sheet-left[data-state="open"] {
+  animation: sheet-in-left 380ms cubic-bezier(0.34, 1.12, 0.64, 1);
+}
+.sheet-left[data-state="closed"] {
+  animation: sheet-out-left 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+.popover[data-state="open"],
+.popover[data-state="delayed-open"] {
+  animation: pop-in 160ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* thin scrollbars */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
-}
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-*::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 999px;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
