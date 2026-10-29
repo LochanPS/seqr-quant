@@ -209,7 +209,7 @@ export default function AssetDetailPage() {
           ) : scans.isError ? (
             <ErrorState message={errMsg(scans.error)} onRetry={() => scans.refetch()} />
           ) : !history.length ? (
-            <EmptyState title="Never scanned" body="Run the first scan to inventory this asset." action={{ label: "Scan now", onClick: () => scan.mutate(a.id) }} />
+            <EmptyState title="Never scanned" body="Run the first scan to inventory this asset." action={{ label: "Run the first scan", onClick: () => scan.mutate(a.id) }} />
           ) : (
             <Table>
               <THead>
