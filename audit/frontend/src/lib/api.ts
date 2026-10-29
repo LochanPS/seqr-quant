@@ -463,6 +463,9 @@ export interface RemediationResult {
     p_optimal: number;
     p_uniform: number;
     amplification: number | null;
+    reduced_optimum: number;
+    sampled_optimum: boolean;
+    contains_best_known: boolean;
   };
   opt_gap_to_optimum?: number;
   notes: string[];

@@ -403,11 +403,29 @@ def plan_opt(findings, actions, budget, mode: str = "local") -> Plan:
 
 # ── QpiAI QCloud (QAOA sampling of alternative plans) ────────────────────────
 
-def contested_actions(plans: list[Plan], findings, actions, cap: int = 5) -> list[str]:
-    """Actions some plan picks — where the methods disagree — strongest standalone gain first."""
-    pool = {i for p in plans if p for i in p.chosen}
+def contested_actions(plans: list[Plan], findings, actions, cap: int = 5, max_actions: int = 7) -> list[str]:
+    """Reduced action set for QAOA.
+
+    Always holds every action of the best known feasible plan — otherwise QAOA cannot sample the
+    optimum at all — then the actions the other methods picked instead (where they disagree),
+    then the strongest unchosen actions as decoys. Size is ``cap``, raised to fit the best plan
+    plus two alternatives, never above ``max_actions`` (qubits = actions + budget slack bits).
+    """
+    feasible = [p for p in plans if p and p.feasible]
+    if not feasible:
+        return []
+    best = min(feasible, key=lambda p: p.residual)
     base = residual(findings, actions, set())
-    return sorted(pool, key=lambda i: base - residual(findings, actions, {i}), reverse=True)[:cap]
+    gain = {a.id: base - residual(findings, actions, {a.id}) for a in actions}
+    by_gain = lambda ids: sorted(ids, key=lambda i: (-gain[i], i))
+    size = min(max(cap, len(best.chosen) + 2), max_actions)
+    out = by_gain(best.chosen)[:size]
+    for i in by_gain({i for p in feasible for i in p.chosen}) + by_gain(gain):
+        if len(out) >= size:
+            break
+        if i not in out:
+            out.append(i)
+    return out
 
 
 def _subsets(reduced: list[Action]):
@@ -416,7 +434,8 @@ def _subsets(reduced: list[Action]):
 
 
 def plan_alternatives_qaoa(findings, actions, budget, focus: list[str], reps: int = 3,
-                           max_iterations: int = 150, cvar_alpha: float = 0.25, top: int = 5) -> dict:
+                           max_iterations: int = 150, cvar_alpha: float = 0.25, top: int = 5,
+                           best_known: float | None = None, tight_penalty: bool = True) -> dict:
     """QAOA over a reduced action set; every sampled plan re-scored exactly against the budget.
 
     Only the ``focus`` actions are decided; all others stay unselected. The budget is encoded
@@ -434,11 +453,19 @@ def plan_alternatives_qaoa(findings, actions, budget, focus: list[str], reps: in
     QpiAIQuantumAuth.login(api_key=qc_key)
 
     reduced = [a for a in actions if a.id in focus]
-    # Penalty above the total risk at stake: any over-budget plan always scores worse than any
-    # feasible one (every violation costs >= 1 hour^2 * P).
-    penalty = sum(f.score for f in findings) + 1.0
+    if tight_penalty:
+        # Residual risk only falls as actions are added, so no plan in the reduced space can
+        # beat residual(all) and no feasible optimum is worse than residual(nothing). Any
+        # P above that spread keeps every over-budget plan (violation >= 1 hour^2) worse than
+        # every feasible one — exact, and far smaller than the total risk at stake.
+        penalty = (residual(findings, actions, set())
+                   - residual(findings, actions, {a.id for a in reduced})) + 1.0
+    else:
+        penalty = sum(f.score for f in findings) + 1.0
     model, _y = build_model(findings, reduced, budget=budget, budget_penalty=penalty)
     conv = hubo_to_qubo(model.to_hubo_dict())
+    # Measured 2026-10-29: rescaling the QUBO to max |coef| = 1 did not raise P(optimum) on either
+    # instance (x0.7-1.2, within run-to-run noise), so energies are passed as-is.
     problem = QUBOProblem(qubo_dict=conv.qubo, num_variables=conv.num_variables, offset=conv.offset,
                           sense="MIN", variable_names=conv.variable_names)
     t0 = time.perf_counter()
@@ -462,8 +489,11 @@ def plan_alternatives_qaoa(findings, actions, budget, focus: list[str], reps: in
                  feasible=e <= budget + 1e-9)
         scored.append(p)
     feasible = sorted((p for p in scored if p["feasible"]), key=lambda p: p["residual"])
-    best_r = feasible[0]["residual"] if feasible else None
-    p_opt = sum(p["probability"] for p in feasible if best_r is not None and p["residual"] <= best_r + 1e-6)
+    # Ground truth for the reduced space by enumeration (<= 2^7 plans), so P(optimum) is
+    # measured against the real optimum, not merely the best plan QAOA happened to sample.
+    best_r = min(round(residual(findings, actions, set(c)), 2) for c in _subsets(reduced)
+                 if effort(actions, set(c)) <= budget + 1e-9)
+    p_opt = sum(p["probability"] for p in feasible if p["residual"] <= best_r + 1e-6)
     n_states = 2 ** len(reduced)
     return {
         "qubits": conv.num_variables, "reduced_actions": [a.id for a in reduced], "reps": reps,
@@ -471,6 +501,9 @@ def plan_alternatives_qaoa(findings, actions, budget, focus: list[str], reps: in
         "seconds": round(dt, 2), "budget_penalty": round(penalty, 1),
         "slack_bits": len(slack_coefficients(int(budget))),
         "alternatives": feasible[:top],
+        "reduced_optimum": best_r,
+        "sampled_optimum": bool(feasible) and feasible[0]["residual"] <= best_r + 1e-6,
+        "contains_best_known": best_known is None or best_r <= best_known + 1e-6,
         "p_optimal": round(p_opt, 4), "p_uniform": round(1 / n_states, 4),
         "amplification": round(p_opt * n_states, 2) if n_states else None,
     }
@@ -524,8 +557,10 @@ def main(argv=None) -> None:
         print(f"  {b:5g}h -> removes {p.removed_pct:5.1f}% of risk  ({', '.join(p.chosen)})")
 
     if not args.no_qaoa:
-        contested = contested_actions([r["opt"], r["greedy"]], findings, actions)
-        q = plan_alternatives_qaoa(findings, actions, args.budget, contested)
+        known = [p for p in (r["opt"], r["exhaustive"], r["greedy"]) if p and p.feasible]
+        contested = contested_actions(known, findings, actions)
+        q = plan_alternatives_qaoa(findings, actions, args.budget, contested,
+                                   best_known=min(p.residual for p in known))
         print(f"\n-- QpiAI QCloud CVaR-QAOA: alternative plans over {len(q['reduced_actions'])} contested actions "
               f"({q['qubits']} qubits, reps {q['reps']}, alpha {q['cvar_alpha']}, {q['seconds']}s) --")
         for i, p in enumerate(q["alternatives"], 1):

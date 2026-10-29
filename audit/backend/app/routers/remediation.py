@@ -106,8 +106,11 @@ def _solve(findings: list[rem.Finding], actions: list[rem.Action], shown: list[d
 
     if req.use_qaoa:
         try:
-            focus = rem.contested_actions([p for p in (opt, exact, greedy) if p], findings, actions)
-            out["qaoa"] = rem.plan_alternatives_qaoa(findings, actions, req.budget, focus)
+            known = [p for p in (opt, exact, greedy) if p and p.feasible]
+            focus = rem.contested_actions(known, findings, actions)
+            out["qaoa"] = rem.plan_alternatives_qaoa(
+                findings, actions, req.budget, focus,
+                best_known=min(p.residual for p in known) if known else None)
             out["notes"].append(
                 f"QAOA explores {2 ** len(focus)} plans with 1024 shots, so sampling covers the space; "
                 "the alternatives menu is not evidence of quantum advantage.")

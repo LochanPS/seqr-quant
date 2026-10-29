@@ -107,7 +107,19 @@ def test_acme_plan_shapes():
     assert e.residual <= g.residual
     assert 50 < e.removed_pct < 70          # 40h of 150h of work removes ~59% of risk
     focus = contested_actions([e, g], fs, acts)
-    assert 1 <= len(focus) <= 5 and set(focus) <= {a.id for a in acts}
+    assert 1 <= len(focus) <= 7 and set(focus) <= {a.id for a in acts}
+    assert set(e.chosen) <= set(focus)      # QAOA can always reach the best known plan
+
+
+def test_contested_keeps_best_plan_and_adds_alternatives():
+    fs = load_findings(ACME) if ACME.exists() else pytest.skip("sample missing")
+    acts = build_actions(fs)
+    e, g = plan_exhaustive(fs, acts, 40), plan_greedy(fs, acts, 40)
+    focus = contested_actions([g, e], fs, acts)              # order must not matter
+    assert set(e.chosen) <= set(focus)
+    assert len(focus) >= len(e.chosen) + 2 or len(focus) == 7
+    assert set(g.chosen) - set(e.chosen) <= set(focus) or len(focus) == 7
+    assert contested_actions([], fs, acts) == []
 
 
 # ── infrastructure actions ───────────────────────────────────────────────────

@@ -394,6 +394,19 @@ function Results({ r }: { r: RemediationResult }) {
               {r.qaoa.p_optimal.toFixed(3)} vs uniform{" "}
               {r.qaoa.p_uniform.toFixed(3)} (×{r.qaoa.amplification})
             </p>
+            <p className="text-xs text-muted-foreground">
+              {r.qaoa.contains_best_known
+                ? "The reduced space contains the best plan found classically"
+                : "The best classical plan does not fit in the reduced space"}
+              {" · "}
+              {r.qaoa.sampled_optimum
+                ? `QAOA sampled its optimum (residual ${r.qaoa.reduced_optimum.toFixed(1)})`
+                : `QAOA never sampled its optimum (residual ${r.qaoa.reduced_optimum.toFixed(1)})`}
+              {" · "}
+              {r.qaoa.amplification !== null && r.qaoa.amplification > 1
+                ? "above uniform this run (varies run to run; not a reliable advantage)"
+                : "no better than uniform sampling this run"}
+            </p>
             <Table>
               <TableHeader>
                 <TableRow>

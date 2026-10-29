@@ -49,8 +49,10 @@ def test_remediation_qaoa_menu_contains_optimum():
     fs = load_findings(acme)
     acts = build_actions(fs)
     e, g = plan_exhaustive(fs, acts, 40), plan_greedy(fs, acts, 40)
-    q = plan_alternatives_qaoa(fs, acts, 40, contested_actions([e, g], fs, acts))
+    q = plan_alternatives_qaoa(fs, acts, 40, contested_actions([e, g], fs, acts), best_known=e.residual)
+    assert q["contains_best_known"] and q["reduced_optimum"] == pytest.approx(e.residual, abs=1e-6)
     assert q["alternatives"][0]["residual"] == pytest.approx(e.residual, abs=1e-6)
+    assert q["budget_penalty"] < sum(f.score for f in fs)      # tight penalty, still exact
     assert all(p["feasible"] for p in q["alternatives"])
 
 
