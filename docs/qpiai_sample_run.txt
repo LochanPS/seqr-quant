@@ -1,0 +1,14 @@
+# SeQr -> QpiAI run log (REAL solver output, auto-written on every website plan)
+# Source: audit/backend/app/migration/remediation.py:log_qpiai_run
+# On the live site this is appended to reports/qpiai_runs.log each time /remediation/plan* runs.
+
+============================================================
+[QpiAI Opt] Received remediation request from website  (2026-10-29 21:26:53Z)
+[QpiAI Opt] Source: org-graph | 16 findings | budget 40.0h | total risk 775.1
+[QpiAI Opt] Building constrained HUBO (overlapping fixes -> higher-order terms)
+[QpiAI Opt] classified HUBO; annealing 16 reads x 1200 sweeps, seed 42
+[QpiAI Opt] Solver status: OPTIMAL | residual 317.76 | 59.0% risk removed | effort 39.0h
+[QpiAI Opt] Certified-optimum check: gap 0.0 (MATCHES optimum)
+[QpiAI QCloud] QAOA on 12 qubits | backend QpiAI-QSV-Local | 13.71s
+[QpiAI QCloud] P(optimum) 0.0154 vs uniform 0.0156 | optimum sampled: yes
+============================================================

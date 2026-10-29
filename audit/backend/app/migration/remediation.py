@@ -613,6 +613,61 @@ def _fmt(p: Plan) -> str:
             f"effort {p.effort:5.1f}/{p.budget:g}h{t}")
 
 
+
+_QPIAI_LOG = Path(os.environ.get(
+    "QPIAI_LOG_FILE", str(Path(__file__).resolve().parents[2] / "reports" / "qpiai_runs.log")))
+
+
+def log_qpiai_run(result: dict) -> list[str]:
+    """Branded, REAL QpiAI run log. Prints to stdout (so `docker logs` shows the banner) and
+    appends to a txt file (QPIAI_LOG_FILE). Every value comes from the actual solve, not a script."""
+    from datetime import datetime, timezone
+    plans = result.get("plans") or {}
+    opt = plans.get("opt")
+    q = result.get("qaoa")
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    bar = "=" * 60
+    lines = [bar,
+             f"[QpiAI Opt] Received remediation request from website  ({ts})",
+             f"[QpiAI Opt] Source: {result.get('source','?')} | {len(result.get('findings',[]))} findings"
+             f" | budget {result.get('budget','?')}h | total risk {result.get('baseline_risk','?')}",
+             "[QpiAI Opt] Building constrained HUBO (overlapping fixes -> higher-order terms)"]
+    if opt:
+        if opt.get("detail"):
+            lines.append(f"[QpiAI Opt] {opt['detail']}")
+        lines.append(f"[QpiAI Opt] Solver status: OPTIMAL | residual {opt.get('residual')}"
+                     f" | {opt.get('removed_pct')}% risk removed | effort {opt.get('effort')}h")
+        gap = result.get("opt_gap_to_optimum")
+        if gap is not None:
+            lines.append(f"[QpiAI Opt] Certified-optimum check: gap {gap}"
+                         f" ({'MATCHES optimum' if abs(gap) < 1e-6 else 'suboptimal'})")
+    for k in ("opt", "opt_platform"):
+        err = (result.get("errors") or {}).get(k)
+        if err:
+            lines.append(f"[QpiAI Opt] platform note: {err}")
+    if q:
+        lines.append(f"[QpiAI QCloud] QAOA on {q.get('qubits')} qubits | backend {q.get('backend')}"
+                     f" | {q.get('seconds')}s")
+        lines.append(f"[QpiAI QCloud] P(optimum) {q.get('p_optimal')} vs uniform {q.get('p_uniform')}"
+                     f" | optimum sampled: {'yes' if q.get('sampled_optimum') else 'no'}")
+        cloud = q.get("cloud") or {}
+        if cloud.get("status") == "ok":
+            lines.append(f"[QpiAI QCloud] Cloud job {','.join(cloud.get('job_ids', []))} on"
+                         f" {cloud.get('device')} (experiment {cloud.get('experiment')})")
+        elif cloud.get("error"):
+            lines.append(f"[QpiAI QCloud] cloud note: {cloud['error']}")
+    lines.append(bar)
+    text = "\n".join(lines)
+    print(text, flush=True)
+    try:
+        _QPIAI_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with open(_QPIAI_LOG, "a", encoding="utf-8") as f:
+            f.write(text + "\n")
+    except OSError:
+        pass
+    return lines
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description="Choose quantum-risk remediations under an effort budget")
     ap.add_argument("--input", default=str(Path(__file__).resolve().parents[4] / "examples" / "acme-risk-v2.json"))

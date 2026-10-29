@@ -159,6 +159,7 @@ async def plan(req: PlanRequest, current_user: Annotated[User, Depends(get_curre
     except (KeyError, TypeError, ValueError) as e:
         raise HTTPException(status_code=422, detail=f"malformed risk-v2 report: {e}")
     result["source"] = source
+    rem.log_qpiai_run(result)
     return result
 
 
@@ -197,6 +198,7 @@ async def plan_infra(
     result["notes"].insert(1, "Public WebPKI cannot issue ML-DSA certificates yet: internet-facing "
                               "certificate actions only shorten exposure; internal PKI can migrate fully.")
     result["source"] = "org-graph"
+    rem.log_qpiai_run(result)
     return result
 
 
