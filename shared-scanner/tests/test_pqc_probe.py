@@ -6,28 +6,44 @@ import subprocess
 import types
 from unittest.mock import patch
 
-from scanner.pqc_probe import probe_active_pqc
+from scanner.pqc_probe import PqcProbeResult, probe_active_pqc
 
 
 def _cp(stdout="", stderr=""):
     return types.SimpleNamespace(stdout=stdout, stderr=stderr, returncode=0)
 
 
-def test_unavailable_when_no_openssl():
-    with patch("scanner.pqc_probe.shutil.which", return_value=None):
-        r = probe_active_pqc("example.com")
-    assert r.available is False
-    assert r.probed is False
-    assert r.supported is False
+_WIRE = PqcProbeResult(True, True, True, "X25519MLKEM768", "wire")
 
 
-def test_unavailable_when_openssl_too_old():
+def test_no_openssl_falls_back_to_wire_probe():
+    with (
+        patch("scanner.pqc_probe.shutil.which", return_value=None),
+        patch("scanner.wire_probe.probe_wire_pqc", return_value=_WIRE) as wire,
+    ):
+        r = probe_active_pqc("example.com", alpn="h2")
+    assert r is _WIRE
+    wire.assert_called_once_with("example.com", 443, timeout=10.0, alpn="h2")
+
+
+def test_no_openssl_starttls_stays_unavailable():
+    with (
+        patch("scanner.pqc_probe.shutil.which", return_value=None),
+        patch("scanner.wire_probe.probe_wire_pqc") as wire,
+    ):
+        r = probe_active_pqc("mail.example.com", 25, starttls="smtp")
+    assert r.available is False and r.probed is False and r.supported is False
+    wire.assert_not_called()
+
+
+def test_old_openssl_falls_back_to_wire_probe():
     with (
         patch("scanner.pqc_probe.shutil.which", return_value="/usr/bin/openssl"),
         patch("scanner.pqc_probe.subprocess.run", return_value=_cp(stdout="OpenSSL 3.0.13 30 Jan 2024")),
+        patch("scanner.wire_probe.probe_wire_pqc", return_value=_WIRE),
     ):
         r = probe_active_pqc("example.com")
-    assert r.available is False
+    assert r is _WIRE
 
 
 def test_detects_hybrid_pqc_group():

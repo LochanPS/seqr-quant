@@ -9,7 +9,8 @@ ML-KEM hybrid groups: X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024).
 Design notes:
 - Server-side only. The free pip CLI stays passive (no OpenSSL 3.5 dependency to
   rely on). The SaaS scanner Docker bakes in OpenSSL 3.5+.
-- Fail-SAFE: if OpenSSL 3.5+ is absent, the probe reports `available=False` and
+- No OpenSSL 3.5+? Direct-TLS probes fall back to `wire_probe` (a hand-built hybrid
+  ClientHello); only STARTTLS protocols report `available=False` and
   the caller falls back to passive results. It never raises into the scan flow.
 - We offer the PQC groups first, then X25519 as a classical fallback, so the
   handshake completes either way and we can read the *negotiated* group as ground
@@ -84,10 +85,14 @@ def probe_active_pqc(
     """
     openssl = _openssl_path_with_pqc()
     if not openssl:
-        return PqcProbeResult(
-            available=False, probed=False, supported=False, negotiated_group="",
-            note="OpenSSL 3.5+ not available; active PQC probe skipped",
-        )
+        if starttls:
+            return PqcProbeResult(
+                available=False, probed=False, supported=False, negotiated_group="",
+                note="OpenSSL 3.5+ not available; active PQC probe skipped (STARTTLS)",
+            )
+        # Direct TLS: speak the hybrid ClientHello ourselves instead of skipping.
+        from .wire_probe import probe_wire_pqc
+        return probe_wire_pqc(host, port, timeout=timeout, alpn=alpn)
 
     cmd = [
         openssl, "s_client",
