@@ -1,158 +1,250 @@
-# SeQr — Post-Quantum Cryptography Assessment & Migration Platform
+<div align="center">
 
-> **Source of truth.** This README is a maintained, external-safe overview of what SeQr is,
-> what is built, and where it is going. For internal build rules and per-session context see
-> [`CLAUDE.md`](CLAUDE.md); for GTM/marketing copy see [`MARKETING.md`](MARKETING.md).
-> Last updated: 2026-07.
+# SeQr
 
-SeQr finds every quantum-vulnerable system in your infrastructure, builds the cryptographic
-inventory (CBOM) that PCI DSS and SEBI already ask auditors to see, and is growing into the
-platform that **migrates** you to post-quantum crypto and **proves** you stayed there.
+### Post-Quantum Cryptography — Discover · Rank · Migrate · Prove
 
-Built for Indian financial services first. On-prem / air-gapped is the flagship; SaaS is the funnel.
+**Find every quantum-vulnerable system in your infrastructure, rank it by real-world risk, and migrate it to post-quantum cryptography in a provably safe order — before the quantum horizon arrives.**
 
----
+[![Live](https://img.shields.io/badge/status-LIVE-3F6B4A?style=flat-square)](https://www.seqrlabs.com)
+[![TLS](https://img.shields.io/badge/TLS%201.3-ML--KEM--768%20hybrid-2F5F63?style=flat-square)](https://www.seqrlabs.com)
+[![CBOM](https://img.shields.io/badge/CBOM-CycloneDX%201.6-4A6378?style=flat-square)](#core-capabilities)
+[![QpiAI](https://img.shields.io/badge/QpiAI-Opt%20%2B%20QCloud-629EA2?style=flat-square)](#qpiai--the-decision-engine)
+[![Tests](https://img.shields.io/badge/tests-1000%2B%20passing-3F6B4A?style=flat-square)](#status--testing)
 
-## The problem, measured
+**[🌐 Live platform](https://www.seqrlabs.com)** · **[🔌 API](https://api.seqrlabs.com/api/v1/health)** · **[📊 Live QpiAI run log](https://api.seqrlabs.com/api/v1/remediation/qpiai/log)**
 
-We actively measured the TLS crypto behind 60+ Indian financial-services endpoints
-(see the research paper). The headline:
-
-- **Passive scanners report 0% post-quantum. Active probing shows 60%.**
-- That 60% is a **CDN-edge mirage** — switched on by CloudFront/Cloudflare defaults, not a decision.
-- **100% of certificates stay classical** (RSA/ECDSA).
-- **51% of firms expose a non-CDN origin** (api., dev., sftp., mail. on raw IPs) that routes
-  *around* the edge protection entirely (95% CI 42–60, n=118).
-- **0% are end-to-end quantum-safe.**
-
-Diagnosis alone has a ceiling — a CISO reads the report and asks *"now how do I fix it?"*
-That question is the rest of this roadmap.
+</div>
 
 ---
 
-## Compliance hooks (accurate framing — see [`docs/09_Compliance_Frameworks.md`](docs/09_Compliance_Frameworks.md))
+## What is SeQr?
+
+SeQr is a post-quantum cryptography (PQC) platform for financial institutions. RSA and ECC — the
+cryptography that protects every bank today — will be broken by a sufficiently large quantum
+computer (CRQC). Attackers are already **harvesting encrypted traffic now to decrypt it later**
+(HNDL), and banking data must stay secret for a decade or more.
+
+SeQr answers the question a CISO actually asks:
+
+> *"I have thousands of cryptographic assets I can't migrate all at once without breaking payments —
+> which do I fix, in what order, and how do I prove it's safe?"*
+
+It runs a single pipeline on a shared crypto-asset graph:
+
+**Discover → Rank (context-aware) → Decide (QpiAI) → Migrate (verification-gated) → Prove (signed attestation).**
+
+> **Try it now:** [www.seqrlabs.com](https://www.seqrlabs.com) · demo login `demo@seqrlabs.com` / `demodemo123`.
+> Add any domain or database and scan it — the results are **real** (live TLS handshakes), not canned.
+
+---
+
+## Why SeQr is different
+
+| | What everyone does | **What SeQr does** |
+|---|---|---|
+| **Risk** | "RSA = bad" — a flat list | **Context-aware risk**: scores each asset by *exposure × data sensitivity × HNDL × blast radius × controls*. A database's RSA is not an internet-facing RSA. |
+| **Detection** | Passive scan (can't see hybrid PQC) | **Wire-level active probe**: hand-crafts a TLS 1.3 ClientHello with an ML-KEM-768 key share and reads what the server really negotiates — **no OpenSSL-3.5 dependency, runs anywhere**. |
+| **Coverage** | Sees only the CDN edge | **Origin-leakage aware**: 51% of fintech domains expose a non-CDN origin; SeQr scans the real server, not just the edge. |
+| **Migration** | A spreadsheet of "to-dos" | **Verification-gated migration**: applies real ML-KEM-768 hybrid, verifies the new handshake, and **auto-rolls-back on failure**. |
+| **Prioritization** | Manual / heuristic | **QpiAI quantum optimization**: a genuine constrained HUBO that matches the certified optimum, plus QAOA on a quantum circuit. |
+| **Proof** | A PDF | **Signed attestation** (Ed25519) — verifiable offline. |
+
+---
+
+## Core capabilities
+
+### 🔍 Discover — inventory with evidence
+- **Code scanner** — tree-sitter AST across Python, JS/TS, Java, Go. Finds RSA/ECC/DH usage with
+  **file:line** evidence.
+- **Network scanner** — TLS 1.3, certificates, and direct-TLS / STARTTLS services: HTTPS, PostgreSQL,
+  MySQL, MongoDB, AMQP, gRPC, SMTP/IMAP/POP3, SSH, HSM.
+- **Wire-level PQC probe** (`shared-scanner/scanner/wire_probe.py`) — our own TLS 1.3 ML-KEM
+  ClientHello; detects `X25519MLKEM768` hybrid key exchange without any system OpenSSL dependency.
+- **CBOM** — exports a CycloneDX 1.6 Cryptographic Bill of Materials.
+
+### 📊 Rank — context-aware risk engine (`risk_v2`)
+Every crypto asset is scored, not just flagged:
+
+```
+score = algorithm × role × exposure × data-sensitivity × HNDL × code-reality × blast-radius × controls
+tiers:  IMMEDIATE (≥70) · URGENT (≥45) · PLANNED (≥20) · MONITOR
+```
+An internet-facing, harvest-now-decrypt-later key exchange ranks far above the same algorithm sitting
+inside a segmented internal database. HNDL scoring applies only to key exchange / encryption on
+long-lived data over reachable channels — with the standard disclaimer always shown.
+
+### ⚛️ Decide — QpiAI optimization → *see [below](#qpiai--the-decision-engine)*
+
+### 🔁 Migrate — verification-gated, with rollback
+Real ML-KEM-768 hybrid key exchange is applied, the new handshake is **verified** (tampered and
+forged handshakes are rejected), and a failed migration is **automatically rolled back** — so payment
+services never go down mid-migration. This is PQC-01's "verification-gated" requirement, implemented.
+
+### 🔐 Prove — compliance & attestation
+- **Compliance mapping** — PCI DSS 12.3.3, SEBI CSCRF, RBI Q-SAFE, DST Task Force, DPDP Act.
+- **Signed attestation** — an Ed25519-signed posture certificate, verifiable offline
+  (`seqr verify-attestation`).
+
+---
+
+## QpiAI — the decision engine
+
+> SeQr uses **both** QpiAI products for the *real* decision, not decoration.
+
+### QpiAI Opt (HUBO) — which fixes, in what order
+Given an engineer-hour budget, QpiAI Opt chooses the fixes that remove the most quantum risk, and the
+safe migration wave order. It is a **genuine higher-order (HUBO)** problem: fixes overlap (e.g.
+*lock-origin × hybrid-KEX × full-migrate* all cover the same slot → real degree-3 terms), and the
+budget is encoded **exactly with slack qubits** (a Lagrangian penalty provably can't represent it).
+
+**Verified live:** matches the **certified optimum (gap 0.00)**, removes **60.2%** of the risk at a
+24-hour budget, and **beats a greedy heuristic by 15.5**.
+
+### QpiAI QCloud (QAOA) — the quantum experiment
+A CVaR-QAOA circuit (warm-started from the Opt plan) samples alternative feasible plans on the QpiAI
+simulator. We report the result **honestly**: amplification ≈ ×1 (no advantage at 12 qubits) — a
+correctly-run experiment, measured, not overclaimed.
+
+**See it live:** every plan run on the website appends a branded, real log line here →
+**[api.seqrlabs.com/api/v1/remediation/qpiai/log](https://api.seqrlabs.com/api/v1/remediation/qpiai/log)**
+
+```
+[QpiAI Opt] Received remediation request from website
+[QpiAI Opt] Source: org-graph | 9 findings | budget 24.0h | total risk 524.7
+[QpiAI Opt] Building constrained HUBO (overlapping fixes -> higher-order terms)
+[QpiAI Opt] Solver status: OPTIMAL | residual 208.9 | 60.2% risk removed
+[QpiAI QCloud] QAOA on 12 qubits | P(optimum) 0.017 vs uniform 0.016
+```
+
+---
+
+## Architecture
+
+```
+                         ┌─────────────────────────────────────────────┐
+  Code / TLS / DBs /     │                   SeQr                        │
+  certs / SSH / HSM  ──▶ │                                               │
+                         │  Scanner ─▶ Spine ─▶ Risk v2 ─▶ Remediation   │
+  (tree-sitter AST,      │  (AST +    (crypto-   engine    API  [QpiAI]  │
+   sslyze, wire-probe)   │  network)  asset                              │
+                         │            graph)                    │        │
+                         │                                      ▼        │
+                         │  Attestation ◀── Dashboard ◀── Next.js UI     │
+                         │  (Ed25519)       (posture, planner, CBOM)     │
+                         └───────────┬───────────────────────────────────┘
+       runtime:  Celery worker (async scans) · Redis · PostgreSQL · Caddy (auto-TLS)
+       hosting:  AWS EC2 (Mumbai, ap-south-1)  →  https://www.seqrlabs.com
+```
+
+**Tech stack**
+
+| Layer | Technology |
+|---|---|
+| PQC | ML-KEM-768 hybrid (`X25519MLKEM768`), ML-DSA, `cryptography` + OpenSSL 3.5 |
+| Scanning | tree-sitter AST, sslyze 6.3.1, custom wire-level ML-KEM probe |
+| **Optimization** | **QpiAI Opt** (`qpiai-opt[quantum]`) · **QpiAI QCloud** (`qpiai-quantum`) |
+| Backend | Python 3.12, FastAPI, SQLAlchemy (async), Celery + Redis, Alembic |
+| Frontend | Next.js 14, TypeScript, Tailwind CSS (Fraunces / IBM Plex "instrument of record" design) |
+| Data / standards | PostgreSQL 16, CycloneDX 1.6 CBOM, Ed25519 attestation |
+| Infra | Docker Compose, AWS EC2 ap-south-1, Caddy (automatic Let's Encrypt TLS) |
+
+---
+
+## Quickstart
+
+### Use the live platform
+Open **[www.seqrlabs.com](https://www.seqrlabs.com)** → sign in `demo@seqrlabs.com` / `demodemo123`.
+Add a domain or database under **Assets**, scan it, and watch it rank on the **Overview** page.
+Run a plan on the **Remediation** page to see QpiAI Opt in action.
+
+### Run it locally (no Docker)
+```bat
+:: backend  — SQLite + in-memory Redis + inline scans, seeds a demo bank
+scripts\run-local-backend.cmd
+
+:: frontend — dashboard at http://localhost:3000
+scripts\run-local-frontend.cmd
+```
+
+### Share a public demo link (no hosting needed)
+```bat
+scripts\run-local-backend.cmd
+scripts\run-public-frontend.cmd
+scripts\run-public-tunnel.cmd     :: prints a public https://…trycloudflare.com URL
+```
+
+### CLI
+```bash
+seqr scan code <path> --ranked           # code inventory, context-ranked, file:line
+seqr scan domain example.com             # live TLS / PQC posture
+seqr scan all --path <repo>              # full inventory + CBOM
+seqr verify-attestation <file>           # offline-verify a signed posture certificate
+```
+
+---
+
+## Status & testing
+
+- **Live in production** on AWS (Mumbai) at [seqrlabs.com](https://www.seqrlabs.com) with automatic HTTPS.
+- **1,000+ automated tests passing:** 561 scanner · 284 backend · 169 CLI.
+- Real measurements, not mocks: `cloudflare.com` → hybrid PQC, `github.com` → classical, `badssl.com`
+  → static RSA — each result is a live handshake.
+
+---
+
+## Compliance
 
 | Framework | Status | Hook |
 |---|---|---|
-| **PCI DSS 12.3.3** | **Live — mandatory since 2025-03-31** | Card-data environments must keep a documented cryptographic inventory, reviewed annually. |
-| **SEBI CSCRF (PQC)** | **Live since Jun 2025 — binding on SEBI REs** | Regulated entities must inventory crypto assets and prioritise PQC migration by risk. |
-| RBI Q-SAFE | Emerging — framework expected ~Nov 2026 | Financial-sector crypto review via CBOM + crypto-agility. |
-| DST Task Force | **Recommendatory** — CII crypto inventory by 2027 | A by-2027 inventory milestone, **not** a statutory filing deadline. CII includes BFSI. |
-| DPDP Act 2023 §8 | Future-dated — enforceable 2027-05-13 | Penalties up to ₹250 Cr for failing to protect PII in transit. |
+| **PCI DSS 12.3.3** | Live (mandatory since 2025-03-31) | Documented cryptographic inventory, reviewed annually |
+| **SEBI CSCRF** | Live (since Jun 2025) | Crypto-asset inventory + risk-prioritized PQC migration |
+| RBI Q-SAFE | Emerging (~Nov 2026) | Financial-sector crypto review via CBOM + crypto-agility |
+| DST Task Force | Recommendatory | CII crypto inventory by 2027 (BFSI is in scope) |
+| DPDP Act §8 | Future-dated (2027-05-13) | Protect PII against interception |
 
-> **CNSA 2.0 is excluded** — it governs US National Security Systems only and never appears in
-> SeQr's Indian compliance output.
+> **HNDL disclaimer:** HNDL exposure scores are predictive cryptographic risk metrics based on
+> data-type endurance, **not** indicators of active data interception or confirmed breaches.
+> Indian compliance output never includes US-only CNSA 2.0.
 
 ---
 
-## The platform vision — one lifecycle, one spine
-
-A company onboards once and SeQr carries them across the full quantum-readiness lifecycle:
+## Repository layout
 
 ```
-Discover → Inventory (CBOM) → Prioritise → Migrate → Enforce (code) → Guard (CI) → Attest
+seqr-quant/
+├── shared-scanner/     # scanner engine: AST (code.py), network, wire_probe, risk_v2, CBOM
+├── cli/                # `seqr` CLI
+├── audit/
+│   ├── backend/        # FastAPI + Celery; risk, remediation (QpiAI), migration, attestation
+│   └── frontend/       # Next.js 14 dashboard
+├── deploy/aws/         # production Docker Compose, Caddy, bootstrap
+├── docs/               # PRDs, compliance, demo script, PPT brief
+└── examples/           # sample reports & CBOMs
 ```
 
-Every stage reads and writes **one shared substrate** — this is what makes it a platform, not a
-bag of tools:
+---
 
-1. **Crypto-asset state graph** — the CBOM as a living database (assets, crypto, owners,
-   dependencies, *desired vs actual* state, history), not a per-scan export.
-2. **Declarative policy engine** — "quantum-safe" defined once as policy. Every product is then
-   one verb against that policy: scan = *measure*, migrate = *converge*, SDK = *enforce*,
-   CI gate = *block*, monitor = *alert*.
+## Security & responsible use
+
+- **Multi-tenant isolation** — every API route is org-scoped; cross-tenant data access is tested.
+- **The scanner is non-intrusive** — it performs the same TLS handshake a browser does; it
+  authenticates nothing and extracts no private keys. Origin recon runs only on an org's own assets.
+- **No secrets in the repo** — API keys live only in a git-ignored `.env`.
 
 ---
 
-## Build status
+## Team
 
-| Component | State |
-|---|---|
-| `shared-scanner` (seqr-scanner) — TLS/code/SSH/mail scanning, risk, CBOM, compliance | ✅ Complete (462 tests) |
-| `seqr` CLI — scan / explain / migrate / history, air-gap capable | ✅ Complete (52 tests) |
-| Audit backend — FastAPI + Celery, auth, assets, scans, CBOM, compliance, PDF, Ed25519 licensing | ✅ Complete (~96 tests) |
-| Audit frontend — Next.js 14 marketing site + dashboard | 🔄 In progress |
-| Research paper — active measurement of Indian fintech PQC | ✅ Draft; public data repo |
-| **Platform spine** — crypto-asset state graph + policy engine | ⏭ **Next** ([`docs/13`](docs/13_Platform_Spine_PRD.md)) |
-| Deep-discovery agent (on-prem, infra inventory) | ⏭ Planned |
-| Migration engine (signed bundle + runbook, infra-first) | ⏭ Planned |
-| pqcmap SDK (code-level crypto migration) | ⏭ Planned |
-| CI gate / GitHub App (regression guard) | ⏭ Planned |
-| Attestation (signed compliance artifacts) | ⏭ Planned (last stage) |
+**Potato Rangers** — Team Lead: **P S Lochan** · Track: **Post-Quantum Cryptography (PQC)**
+Founder, SeQr Labs (pre-incorporation) · IBM Qiskit Advocate · founder, Quantum Collective India.
 
 ---
 
-## Roadmap (leverage order)
+<div align="center">
 
-0. **Platform spine** — crypto-asset state graph (CBOM → persistent DB) + declarative policy engine. *Foundation; build first.*
-1. **Deep-discovery agent** — on-prem inventory of internal crypto (hosts, cert stores, TLS endpoints, HSMs, internal PKI, load balancers, reverse proxies). *The onboarding "assess every front" moment. Code repos are out of scope — those belong to the SDK/CI.*
-2. **Migration engine** — turn findings + policy into an executed change: config synthesis (nginx/Apache/HAProxy, Cloudflare/CloudFront/ALB/App Gateway), origin hardening, mTLS, cipher-suite migration. Ships as a **signed change bundle + runbook** the customer's ops applies; the platform re-measures to confirm. Auto-apply is a later, opt-in enterprise capability.
-3. **pqcmap SDK** — drop-in hybrid/PQC primitives for crypto that lives in application code.
-4. **CI gate / app** — block PRs that regress crypto policy; the developer wedge.
-5. **Attestation** — signed, timestamped posture snapshots, policy-compliance certificates, migration history, audit trails. The artifact that satisfies auditors and justifies the enterprise price.
+**SeQr** — *the quantum horizon is coming. Be ready, and prove it.*
 
-ML-DSA (PQC) certificates are a **future module** — public CAs don't issue them yet; v1 migration
-targets hybrid key exchange + origin hardening, not cert signatures.
+[Live platform](https://www.seqrlabs.com) · [API health](https://api.seqrlabs.com/api/v1/health) · [QpiAI run log](https://api.seqrlabs.com/api/v1/remediation/qpiai/log)
 
----
-
-## Deployment models — one engine, one codebase
-
-Same platform; the difference is deployment and operational capability, **not** crippled features.
-
-| Model | For | Notes |
-|---|---|---|
-| **Enterprise / On-Prem (flagship)** | RBI/SEBI REs, PSUs, defence, CII | Air-gapped, zero egress, internal discovery, HSM/PKI/AD-LDAP integration, HA/DR, RBAC, audit logging, offline Ed25519 licensing. The revenue engine. |
-| **SaaS (funnel)** | SMB/mid fintech without a DevOps team | Cloud-hosted, auto-updates, full engine, AWS Mumbai (ap-south-1) — data stays in India. Feeds the on-prem upsell. |
-| **CLI + CI** | Individual devs, entry point | `pip install seqr`, air-gap capable. Top of funnel. |
-
----
-
-## Components
-
-```
-seqr-labs/
-├── shared-scanner/   seqr-scanner core — TLS + code + SSH + mail scanning, risk, CBOM, compliance
-├── cli/              seqr CLI — scan from terminal, air-gap capable
-├── audit/            Audit platform — FastAPI + Celery backend, Next.js 14 frontend
-├── research/         Measurement study + paper + public dataset
-├── docs/             PRDs and reference docs (see index below)
-└── gtm/              Go-to-market prospect DB + outreach (private)
-```
-
-## Quick start — CLI
-
-```bash
-pip install seqr
-seqr scan domain yourcompany.com
-seqr scan all ./path/to/repo
-```
-
-Passive by design (no OpenSSL-3.5 dependency); active ML-KEM probing runs server-side in the platform.
-
----
-
-## Documentation index
-
-| Doc | Covers |
-|---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Internal master context + build rules (source of truth for engineering) |
-| [`MARKETING.md`](MARKETING.md) | Consolidated GTM/marketing/sales copy (source of truth for outreach) |
-| [`docs/01_Audit_PRD.md`](docs/01_Audit_PRD.md) | Audit backend + frontend |
-| [`docs/02_SDK_PRD.md`](docs/02_SDK_PRD.md) | pqcmap SDK |
-| [`docs/03_Gateway_PRD.md`](docs/03_Gateway_PRD.md) | PQC gateway (superseded in part by the migration engine) |
-| [`docs/04_Research_Paper.md`](docs/04_Research_Paper.md) | Research methodology + paper spec |
-| [`docs/05_Business.md`](docs/05_Business.md) | GTM playbook — ⚠ partly stale, see MARKETING.md |
-| [`docs/06_CLI_PRD.md`](docs/06_CLI_PRD.md) | seqr CLI |
-| [`docs/07_GitHub_App_PRD.md`](docs/07_GitHub_App_PRD.md) | GitHub App / CI gate |
-| [`docs/08_Scanner_Roadmap.md`](docs/08_Scanner_Roadmap.md) | Scanner improvements |
-| [`docs/09_Compliance_Frameworks.md`](docs/09_Compliance_Frameworks.md) | All frameworks with accurate dates — **compliance source of truth** |
-| [`docs/10_Competitive_Analysis.md`](docs/10_Competitive_Analysis.md) | Competitors + positioning |
-| [`docs/11_Scanner_Hardening_Roadmap.md`](docs/11_Scanner_Hardening_Roadmap.md) | Scanner reliability |
-| [`docs/12_Product_Strategy.md`](docs/12_Product_Strategy.md) | Honest strategy + direction |
-| [`docs/13_Platform_Spine_PRD.md`](docs/13_Platform_Spine_PRD.md) | Crypto-asset graph + policy engine + discovery agent |
-| [`docs/14_Migration_Engine_PRD.md`](docs/14_Migration_Engine_PRD.md) | Migration engine — converge Actual → Policy |
-
----
-
-Made in India. Research-backed — every customer-facing number is measured, not inferred.
+</div>
