@@ -149,8 +149,8 @@ export default function RemediationPage() {
             )}
           </Field>
           <div className="max-w-md space-y-3 border-t border-rule pt-4">
-            <Switch checked={useOpt} onChange={setUseOpt} label="Use QpiAI Opt" description="Solve the selection on QpiAI's optimiser, then compare against greedy and exhaustive search." />
-            <Switch checked={useQaoa} onChange={setUseQaoa} label="Run QAOA alternatives" description="Sample near-optimal alternatives on QpiAI QCloud. Slower, about 10 to 20 seconds." />
+            <Switch checked={useOpt} onChange={setUseOpt} label="Use QpiAI Opt" description="Solve the selection with the QpiAI Opt HUBO solver (runs on this server), then compare against greedy and exhaustive search." />
+            <Switch checked={useQaoa} onChange={setUseQaoa} label="Run QAOA alternatives" description="Sample near-optimal alternatives with QpiAI QAOA on the local QCloud simulator. Slower, about 10 to 20 seconds." />
           </div>
         </div>
 
@@ -309,7 +309,8 @@ function Results({ r }: { r: RemediationResult }) {
       {r.qaoa && (
         <Section index="04" title="QAOA alternatives" description={`${r.qaoa.qubits} qubits · ${r.qaoa.reps} reps · CVaR alpha ${r.qaoa.cvar_alpha} · ${r.qaoa.seconds.toFixed(1)} s`}>
           <div className="mb-5 flex flex-wrap gap-2">
-            <Chip tone={r.qaoa.contains_best_known ? "safe" : "urgent"}>{r.qaoa.contains_best_known ? "contains best known" : "best known not sampled"}</Chip>
+            <Chip tone={r.qaoa.contains_best_known ? "safe" : "urgent"}>{r.qaoa.contains_best_known ? "contains best known" : "best known outside reduced set"}</Chip>
+            <Chip tone={r.qaoa.sampled_optimum ? "safe" : "urgent"}>{r.qaoa.sampled_optimum ? "optimum sampled" : "optimum not sampled"}</Chip>
             {r.qaoa.amplification != null && <Chip>amplification {r.qaoa.amplification.toFixed(1)}x</Chip>}
             <Chip>p optimal {(r.qaoa.p_optimal * 100).toFixed(1)}%</Chip>
             <Chip>p uniform {(r.qaoa.p_uniform * 100).toFixed(1)}%</Chip>
