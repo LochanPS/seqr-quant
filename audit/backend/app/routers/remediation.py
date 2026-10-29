@@ -19,8 +19,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
 from app.migration import remediation as rem
 from app.models.user import User
+from app.routers.spine import ranked_components
 from app.security import get_current_user
 
 router = APIRouter()
@@ -51,19 +55,24 @@ def _plan_out(p: rem.Plan | None) -> dict | None:
             "feasible": p.feasible, "solver_time_s": p.solver_time_s, "detail": p.detail}
 
 
+_FINDING_KEYS = ("rel_path", "line_number", "algorithm", "score", "tier", "role",
+                 "exposure", "hndl", "effort_hours", "top_reason", "slot_key", "asset_type")
+
+
 def _compute(report: dict, req: PlanRequest) -> dict:
     findings = rem.findings_from_dict(report)
-    actions = rem.build_actions(findings)
+    return _solve(findings, rem.build_actions(findings), report["findings"], req)
+
+
+def _solve(findings: list[rem.Finding], actions: list[rem.Action], shown: list[dict],
+           req: PlanRequest) -> dict:
     out: dict[str, Any] = {
         "baseline_risk": round(sum(f.score for f in findings), 1),
         "budget": req.budget,
         "actions": [{"id": a.id, "label": a.label, "effort": a.effort, "covers": len(a.covers)}
                     for a in actions],
-        "findings": [
-            {k: f.get(k) for k in ("rel_path", "line_number", "algorithm", "score", "tier", "role",
-                                   "exposure", "hndl", "effort_hours", "top_reason")}
-            for f in sorted(report["findings"], key=lambda f: -float(f["score"]))
-        ],
+        "findings": [{k: f.get(k) for k in _FINDING_KEYS}
+                     for f in sorted(shown, key=lambda f: -float(f["score"]))],
         "plans": {}, "errors": {},
         "notes": [
             "Coverage fractions and efforts are stated assumptions, not measurements.",
@@ -130,4 +139,39 @@ async def plan(req: PlanRequest, current_user: Annotated[User, Depends(get_curre
     except (KeyError, TypeError, ValueError) as e:
         raise HTTPException(status_code=422, detail=f"malformed risk-v2 report: {e}")
     result["source"] = source
+    return result
+
+
+class InfraPlanRequest(BaseModel):
+    budget: float = Field(default=24, gt=0, le=10_000, description="engineer-hours available")
+    use_opt: bool = True
+    use_qaoa: bool = False
+    curve: list[float] = Field(default_factory=lambda: [8, 24, 48], max_length=8)
+
+
+@router.post("/plan-infra")
+async def plan_infra(
+    req: InfraPlanRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+):
+    """Choose infrastructure fixes for the caller's org under an engineer-hour budget.
+
+    Findings come from the org's own crypto graph (same ranking as ``GET /graph/risk``,
+    org-scoped); actions are per-asset (hybrid KEX, SSH PQ KEX, cert reissue, origin lock,
+    full migration) plus org-wide segmentation. Read-only: nothing is stored.
+    """
+    _summary, comps = await ranked_components(db, current_user.org_id)
+    findings = rem.infra_findings_from_components(comps)
+    if not findings:
+        raise HTTPException(status_code=422, detail="no quantum-vulnerable crypto in this org's graph yet")
+    if len(findings) > _MAX_FINDINGS:
+        raise HTTPException(status_code=422, detail=f"at most {_MAX_FINDINGS} findings per plan")
+    actions = rem.build_infra_actions(findings)
+    shown = [c for c in comps if float(c["score"]) > 0]
+    result = await run_in_threadpool(_solve, findings, actions, shown, PlanRequest(
+        budget=req.budget, use_opt=req.use_opt, use_qaoa=req.use_qaoa, curve=req.curve))
+    result["notes"].insert(1, "Public WebPKI cannot issue ML-DSA certificates yet: internet-facing "
+                              "certificate actions only shorten exposure; internal PKI can migrate fully.")
+    result["source"] = "org-graph"
     return result

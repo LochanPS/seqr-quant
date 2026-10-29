@@ -11,6 +11,10 @@ Actions (each a real SeQr capability):
   segment:internal  segmentation + mTLS for internal services — 30% of internal/unknown-exposure risk
   sdk:pqcmap-<lang> adopt SeQr's pqcmap SDK in one language   — 70% of that language's findings
 
+Infrastructure findings (the org's crypto graph, ``GET /api/v1/graph/risk``) get per-asset
+actions instead — see ``build_infra_actions``: hybrid-kex, ssh-pq-kex, reissue-cert,
+lock-origin, migrate, plus org-wide segmentation. Same objective, same solvers.
+
 Binary y_a = 1 ⇔ action a is selected. Residual risk of finding f, covered by actions C(f):
 
     minimise  Σ_f  score_f · Π_{a ∈ C(f)} (1 − frac_{a,f} · y_a)
@@ -66,6 +70,9 @@ class Finding:
     exposure: str
     effort: float
     tier: str = ""
+    asset_type: str = ""        # infra findings only
+    slot_key: str = ""          # infra findings only
+    fronted_by_edge: bool = False
 
     @property
     def language(self) -> str:
@@ -132,6 +139,90 @@ def build_actions(findings: list[Finding], a: Assumptions = Assumptions()) -> li
         actions.append(Action(f"sdk:pqcmap-{lang}", f"adopt pqcmap hybrid KEM / ML-DSA in {lang}",
                               a.sdk_base_effort + a.sdk_per_file_effort * files,
                               {f.id: a.sdk_frac for f in fs}))
+    return actions
+
+
+# ── infrastructure (org graph) ───────────────────────────────────────────────
+
+@dataclass(frozen=True)
+class InfraAssumptions:
+    """Stated, not measured. Efforts are whole hours so the QAOA slack encoding stays exact."""
+    kex_effort: dict = field(default_factory=lambda: {
+        "domain": 3, "load_balancer": 4, "origin": 6, "tls_endpoint": 6, "grpc": 6,
+        "smtp": 4, "imap": 4, "pop3": 4})
+    kex_effort_default: int = 8          # databases, queues, hosts: rebuild + restart window
+    ssh_kex_effort: int = 2              # OpenSSH >= 9.9 ships mlkem768x25519-sha256
+    cert_effort: int = 4
+    cert_frac_internet: float = 0.5      # public WebPKI cannot issue ML-DSA yet: shorter-lived,
+                                         # automated classical certs only halve the exposure
+    cert_frac_private: float = 1.0       # internal PKI can issue ML-DSA / composite today
+    lock_origin_effort: int = 3
+    lock_origin_frac: float = 0.4        # origin no longer directly reachable; edge->origin hop remains
+    segment_effort: int = 8
+    segment_frac: float = 0.3
+
+
+_KEX_SLOTS = {"tls:kex", "ike:kex"}
+
+
+def infra_findings_from_components(components: list[dict]) -> list[Finding]:
+    """``GET /api/v1/graph/risk`` components -> Findings (already-safe slots dropped)."""
+    out = []
+    for c in components:
+        if float(c["score"]) <= 0:
+            continue
+        ident = c.get("file_path") or c["rel_path"]
+        out.append(Finding(
+            id=f"{ident}#{c['slot_key']}", rel_path=ident, line=0, algorithm=c["algorithm"],
+            score=float(c["score"]), role=c["role"], exposure=c["exposure"],
+            effort=float(max(1, round(float(c.get("effort_hours") or 8)))), tier=c.get("tier", ""),
+            asset_type=c.get("asset_type", ""), slot_key=c["slot_key"],
+            fronted_by_edge=bool(c.get("fronted_by_edge")),
+        ))
+    return out
+
+
+def _cert_frac(f: Finding, a: InfraAssumptions) -> float:
+    if f.slot_key != "tls:cert":
+        return 1.0
+    return a.cert_frac_internet if f.exposure == "internet" else a.cert_frac_private
+
+
+def build_infra_actions(findings: list[Finding], a: InfraAssumptions = InfraAssumptions()) -> list[Action]:
+    """Per-asset infrastructure fixes. Several actions can cover one slot, so the objective
+    keeps genuine higher-order terms (e.g. lock-origin x hybrid-kex x segmentation)."""
+    actions: list[Action] = []
+    by_asset: dict[str, list[Finding]] = {}
+    for f in findings:
+        by_asset.setdefault(f.rel_path, []).append(f)
+    for asset, fs in sorted(by_asset.items()):
+        atype = fs[0].asset_type
+        # full migration of every slot on the asset — the expensive, complete option (public
+        # certificates still capped: no WebPKI CA issues ML-DSA yet)
+        actions.append(Action(f"migrate:{asset}", f"migrate all crypto on {asset}",
+                              sum(f.effort for f in fs), {f.id: _cert_frac(f, a) for f in fs}))
+        kex = [f for f in fs if f.slot_key in _KEX_SLOTS]
+        if kex:
+            actions.append(Action(f"hybrid-kex:{asset}", f"enable X25519MLKEM768 on {asset}",
+                                  a.kex_effort.get(atype, a.kex_effort_default), {f.id: 1.0 for f in kex}))
+        ssh = [f for f in fs if f.slot_key == "ssh:kex"]
+        if ssh:
+            actions.append(Action(f"ssh-pq-kex:{asset}", f"enable mlkem768x25519-sha256 sshd KEX on {asset}",
+                                  a.ssh_kex_effort, {f.id: 1.0 for f in ssh}))
+        certs = [f for f in fs if f.slot_key == "tls:cert"]
+        if certs:
+            frac = _cert_frac(certs[0], a)
+            actions.append(Action(f"reissue-cert:{asset}",
+                                  f"reissue {asset} certificate (" +
+                                  ("short-lived + automated" if frac < 1 else "ML-DSA, internal PKI") + ")",
+                                  a.cert_effort, {f.id: frac for f in certs}))
+        if any(f.fronted_by_edge for f in fs):
+            actions.append(Action(f"lock-origin:{asset}", f"restrict {asset} to edge IPs / authenticated origin pulls",
+                                  a.lock_origin_effort, {f.id: a.lock_origin_frac for f in fs}))
+    seg = {f.id: a.segment_frac for f in findings if f.exposure in {"internal", "unknown"}}
+    if seg:
+        actions.append(Action("segment:internal", "network segmentation + mTLS for internal services",
+                              a.segment_effort, seg))
     return actions
 
 

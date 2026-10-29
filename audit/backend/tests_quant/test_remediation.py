@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from app.migration import remediation as rem
 from app.migration.remediation import (Action, Assumptions, Finding, build_actions, build_model,
                                        contested_actions, effort, load_findings, plan_exhaustive,
                                        plan_greedy, residual, slack_coefficients, _var)
@@ -107,3 +108,38 @@ def test_acme_plan_shapes():
     assert 50 < e.removed_pct < 70          # 40h of 150h of work removes ~59% of risk
     focus = contested_actions([e, g], fs, acts)
     assert 1 <= len(focus) <= 5 and set(focus) <= {a.id for a in acts}
+
+
+# ── infrastructure actions ───────────────────────────────────────────────────
+
+def _comp(ident, slot, score, role, exposure, atype, fronted=False, effort=8):
+    return {"file_path": ident, "rel_path": f"{ident} [{slot}]", "slot_key": slot, "score": score,
+            "role": role, "exposure": exposure, "asset_type": atype, "algorithm": "X25519",
+            "tier": "", "effort_hours": effort, "fronted_by_edge": fronted}
+
+
+def test_infra_actions_overlap_into_higher_order_terms():
+    comps = [
+        _comp("origin.bank", "tls:kex", 90, "key_exchange", "internet", "origin", fronted=True),
+        _comp("origin.bank", "tls:cert", 40, "signature", "internet", "origin", fronted=True),
+        _comp("db01", "tls:kex", 30, "key_exchange", "internal", "postgres"),
+        _comp("db01", "tls:cert", 20, "signature", "internal", "postgres"),
+        _comp("bastion", "ssh:kex", 25, "key_exchange", "internal", "ssh"),
+        _comp("safe.bank", "tls:kex", 0, "key_exchange", "internet", "domain"),
+    ]
+    findings = rem.infra_findings_from_components(comps)
+    assert len(findings) == 5                                  # zero-score slot dropped
+    acts = {a.id: a for a in rem.build_infra_actions(findings)}
+    assert acts["reissue-cert:origin.bank"].covers == {"origin.bank#tls:cert": 0.5}   # public WebPKI
+    assert acts["reissue-cert:db01"].covers == {"db01#tls:cert": 1.0}                  # internal PKI
+    assert acts["ssh-pq-kex:bastion"].effort == 2
+    assert acts["hybrid-kex:db01"].effort == 8 and acts["hybrid-kex:origin.bank"].effort == 6
+    assert "lock-origin:db01" not in acts
+    assert acts["migrate:origin.bank"].covers["origin.bank#tls:cert"] == 0.5          # capped too
+    assert acts["migrate:db01"].covers["db01#tls:cert"] == 1.0
+    # origin kex covered by migrate x hybrid-kex x lock-origin -> degree-3 term
+    covering = [a for a in acts.values() if "origin.bank#tls:kex" in a.covers]
+    assert len(covering) == 3
+    ex = rem.plan_exhaustive(findings, list(acts.values()), 10)
+    gr = rem.plan_greedy(findings, list(acts.values()), 10)
+    assert ex.feasible and ex.residual <= gr.residual + 1e-9

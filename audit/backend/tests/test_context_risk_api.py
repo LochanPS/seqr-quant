@@ -142,3 +142,40 @@ def test_summary_has_disclaimer():
     s = _get()["summary"]
     assert "not indicators of active data interception" in s["hndl_disclaimer"]
     assert sum(s["tiers"].values()) == s["findings"]
+
+
+# ── POST /api/v1/remediation/plan-infra — planner over the same org graph ──────
+
+def _plan(budget=24):
+    with TestClient(app) as c:
+        r = c.post("/api/v1/remediation/plan-infra", json={"budget": budget, "use_opt": False, "curve": [4, 24]})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_infra_plan_is_org_scoped_and_skips_safe_slots():
+    d = _plan()
+    assert d["source"] == "org-graph"
+    ids = {a["id"] for a in d["actions"]}
+    assert not any("secret.other.example" in i for i in ids)        # ORG_B never planned
+    assert not any("www.bank.example" in i for i in ids)            # hybrid slot scores 0
+    assert {f["slot_key"] for f in d["findings"]} >= {"tls:kex", "tls:cert"}
+
+
+def test_infra_actions_match_the_graph():
+    ids = {a["id"] for a in _plan()["actions"]}
+    assert "hybrid-kex:kyc.bank.example" in ids
+    assert "reissue-cert:kyc.bank.example" in ids
+    assert "lock-origin:origin-kyc.bank.example" in ids             # fronted by an origin_of edge
+    assert "lock-origin:kyc.bank.example" not in ids                # the edge itself is not an origin
+    assert "segment:internal" in ids                                # app01.internal
+
+
+def test_infra_plan_respects_budget_and_exhaustive_beats_or_ties_greedy():
+    d = _plan(budget=6)
+    ex, gr = d["plans"]["exhaustive"], d["plans"]["greedy"]
+    assert ex["feasible"] and gr["feasible"] and ex["effort"] <= 6
+    assert ex["residual"] <= gr["residual"] + 1e-6
+    assert ex["residual"] < d["baseline_risk"]
+    assert [p["budget"] for p in d["curve"]] == [4, 24]
+    assert any("WebPKI" in n for n in d["notes"])

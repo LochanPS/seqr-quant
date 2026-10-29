@@ -176,6 +176,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify(body),
       }),
+    planInfra: (body: Omit<RemediationRequest, "report">) =>
+      request<RemediationResult>("/remediation/plan-infra", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
   },
   migration: {
     pipeline: () => request<PipelineStatus>("/migration/pipeline"),
@@ -442,6 +447,8 @@ export interface RemediationResult {
     hndl: boolean;
     effort_hours: number;
     top_reason: string;
+    slot_key?: string | null;
+    asset_type?: string | null;
   }[];
   plans: { greedy?: RemediationPlan; exhaustive?: RemediationPlan | null; opt?: RemediationPlan };
   errors: Record<string, string>;

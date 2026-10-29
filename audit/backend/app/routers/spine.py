@@ -377,18 +377,14 @@ _HNDL_DISCLAIMER = (
 )
 
 
-@router.get("/risk")
-async def context_risk(
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: AsyncSession = Depends(get_db),
-):
-    """Rank every current crypto slot by context-aware risk (exposure, role, data, blast radius).
+async def ranked_components(db: AsyncSession, org) -> tuple[dict, list[dict]]:
+    """Context-aware (risk v2) assessment of every current crypto slot in ``org``.
 
-    Org-scoped: assets, states, observations and edges are all filtered by the caller's org.
+    Org-scoped: assets, states, observations and edges are all filtered by ``org``.
+    Shared by ``GET /graph/risk`` and the infrastructure remediation planner.
     """
     from engines.risk_v2 import InfraComponent, assess_component, summarize
 
-    org = current_user.org_id
     assets = {a.id: a for a in (await db.execute(select(Asset).where(Asset.org_id == org))).scalars()}
     edges = (await db.execute(
         select(AssetEdge).where(AssetEdge.org_id == org, AssetEdge.valid_to.is_(None))
@@ -423,7 +419,17 @@ async def context_risk(
     for a, c in pairs:
         d = a.to_dict()
         d.update(asset_id=c.asset_id, asset_type=c.asset_type, slot_key=c.slot_key,
-                 source=c.source, reasons=a.reasons(2))
+                 source=c.source, fronted_by_edge=c.fronted_by_edge, reasons=a.reasons(2))
         out.append(d)
+    return summary, out
+
+
+@router.get("/risk")
+async def context_risk(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+):
+    """Rank every current crypto slot by context-aware risk (exposure, role, data, blast radius)."""
+    summary, out = await ranked_components(db, current_user.org_id)
     await _audit(db, current_user, "context_risk", extra={"count": len(out)})
     return {"summary": summary, "components": out}

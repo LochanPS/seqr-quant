@@ -3,11 +3,7 @@
 import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Atom, Loader2, Play, Target, Upload } from "lucide-react";
-import {
-  api,
-  type RemediationPlan,
-  type RemediationResult,
-} from "@/lib/api";
+import { api, type RemediationPlan, type RemediationResult } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +30,8 @@ const TIER_VARIANT: Record<string, BadgeVariant> = {
 export default function RemediationPage() {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [budget, setBudget] = useState("40");
+  const [mode, setMode] = useState<"infra" | "code">("infra");
+  const [budget, setBudget] = useState("24");
   const [report, setReport] = useState<Record<string, unknown> | null>(null);
   const [reportName, setReportName] = useState<string | null>(null);
   const [useOpt, setUseOpt] = useState(true);
@@ -42,22 +39,34 @@ export default function RemediationPage() {
 
   const run = useMutation({
     mutationFn: () =>
-      api.remediation.plan({
-        report,
-        budget: Number(budget) || 40,
-        use_opt: useOpt,
-        use_qaoa: useQaoa,
-        curve: [20, 40, 80],
-      }),
+      mode === "infra"
+        ? api.remediation.planInfra({
+            budget: Number(budget) || 24,
+            use_opt: useOpt,
+            use_qaoa: useQaoa,
+            curve: [8, 24, 48],
+          })
+        : api.remediation.plan({
+            report,
+            budget: Number(budget) || 40,
+            use_opt: useOpt,
+            use_qaoa: useQaoa,
+            curve: [20, 40, 80],
+          }),
     onError: (e: Error) =>
-      toast({ title: "Planning failed", description: e.message, variant: "error" }),
+      toast({
+        title: "Planning failed",
+        description: e.message,
+        variant: "error",
+      }),
   });
 
   async function onFile(f: File | undefined) {
     if (!f) return;
     try {
       const parsed = JSON.parse(await f.text());
-      if (!Array.isArray(parsed?.findings)) throw new Error("no findings[] in this file");
+      if (!Array.isArray(parsed?.findings))
+        throw new Error("no findings[] in this file");
       setReport(parsed);
       setReportName(f.name);
     } catch (e) {
@@ -74,11 +83,14 @@ export default function RemediationPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Remediation planner</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Remediation planner
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Given an engineer-hour budget, choose the fixes that remove the most quantum risk.
-          Findings are ranked by context-aware risk; the selection is solved with QpiAI Opt and
-          checked against a greedy heuristic and a certified optimum.
+          Given an engineer-hour budget, choose the fixes that remove the most
+          quantum risk. Findings are ranked by context-aware risk; the selection
+          is solved with QpiAI Opt and checked against a greedy heuristic and a
+          certified optimum.
         </p>
       </div>
 
@@ -99,34 +111,69 @@ export default function RemediationPage() {
           </div>
           <div className="space-y-2">
             <Label>Findings</Label>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-                <Upload className="mr-2 h-4 w-4" /> Upload risk-v2 JSON
-              </Button>
-              {report ? (
+            <div className="flex gap-1">
+              {(["infra", "code"] as const).map((m) => (
                 <Button
-                  variant="ghost"
+                  key={m}
                   size="sm"
+                  variant={mode === m ? "default" : "outline"}
                   onClick={() => {
-                    setReport(null);
-                    setReportName(null);
+                    setMode(m);
+                    setBudget(m === "infra" ? "24" : "40");
+                    run.reset();
                   }}
                 >
-                  Use sample
+                  {m === "infra"
+                    ? "Infrastructure (your org)"
+                    : "Code (risk-v2 report)"}
                 </Button>
-              ) : null}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="application/json,.json"
-                className="hidden"
-                onChange={(e) => onFile(e.target.files?.[0])}
-              />
+              ))}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {reportName ?? "ACME Bank sample"} — produce your own with{" "}
-              <code className="font-mono">seqr scan code PATH --context ctx.json --output json</code>
-            </p>
+            {mode === "infra" ? (
+              <p className="text-xs text-muted-foreground">
+                Every vulnerable crypto slot in your asset graph, ranked as on
+                the Posture page. Actions: hybrid key exchange, SSH PQ KEX,
+                certificate reissue, origin lock-down, full migration,
+                segmentation.
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" /> Upload risk-v2 JSON
+                  </Button>
+                  {report ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setReport(null);
+                        setReportName(null);
+                      }}
+                    >
+                      Use sample
+                    </Button>
+                  ) : null}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={(e) => onFile(e.target.files?.[0])}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {reportName ?? "ACME Bank sample"} — produce your own with{" "}
+                  <code className="font-mono">
+                    seqr scan code PATH --context ctx.json --output json
+                  </code>
+                </p>
+              </>
+            )}
           </div>
           <Button onClick={() => run.mutate()} disabled={run.isPending}>
             {run.isPending ? (
@@ -138,7 +185,11 @@ export default function RemediationPage() {
           </Button>
           <div className="flex flex-wrap gap-6 text-sm md:col-span-3">
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={useOpt} onChange={(e) => setUseOpt(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={useOpt}
+                onChange={(e) => setUseOpt(e.target.checked)}
+              />
               QpiAI Opt (HUBO)
             </label>
             <label className="flex items-center gap-2">
@@ -168,7 +219,11 @@ function Results({ r }: { r: RemediationResult }) {
   return (
     <>
       <div className="grid gap-4 md:grid-cols-4">
-        <Stat label="Total risk" value={r.baseline_risk.toFixed(0)} sub={`${r.findings.length} findings`} />
+        <Stat
+          label="Total risk"
+          value={r.baseline_risk.toFixed(0)}
+          sub={`${r.findings.length} findings`}
+        />
         <Stat
           label="Risk removed"
           value={best ? `${best.removed_pct.toFixed(1)}%` : "—"}
@@ -188,7 +243,11 @@ function Results({ r }: { r: RemediationResult }) {
                 ? "optimal"
                 : `+${r.opt_gap_to_optimum}`
           }
-          sub={r.plans.exhaustive ? "certified by exhaustive search" : "no certificate (large instance)"}
+          sub={
+            r.plans.exhaustive
+              ? "certified by exhaustive search"
+              : "no certificate (large instance)"
+          }
         />
       </div>
 
@@ -226,16 +285,24 @@ function Results({ r }: { r: RemediationResult }) {
                     <TableRow key={id}>
                       <TableCell>
                         <div className="font-mono text-xs">{id}</div>
-                        <div className="text-xs text-muted-foreground">{effortOf[id]?.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {effortOf[id]?.label}
+                        </div>
                       </TableCell>
-                      <TableCell className="text-right">{effortOf[id]?.effort}h</TableCell>
-                      <TableCell className="text-right">{effortOf[id]?.covers}</TableCell>
+                      <TableCell className="text-right">
+                        {effortOf[id]?.effort}h
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {effortOf[id]?.covers}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground">No action fits this budget.</p>
+              <p className="text-sm text-muted-foreground">
+                No action fits this budget.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -261,12 +328,20 @@ function Results({ r }: { r: RemediationResult }) {
                   if (!p) return null;
                   return (
                     <TableRow key={k}>
-                      <TableCell className="font-mono text-xs">{p.method}</TableCell>
-                      <TableCell className="text-right">{p.residual.toFixed(1)}</TableCell>
-                      <TableCell className="text-right">{p.removed_pct.toFixed(1)}%</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {p.method}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {p.residual.toFixed(1)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {p.removed_pct.toFixed(1)}%
+                      </TableCell>
                       <TableCell className="text-right">{p.effort}h</TableCell>
                       <TableCell className="text-right">
-                        {p.solver_time_s ? `${p.solver_time_s.toFixed(2)}s` : "—"}
+                        {p.solver_time_s
+                          ? `${p.solver_time_s.toFixed(2)}s`
+                          : "—"}
                       </TableCell>
                     </TableRow>
                   );
@@ -284,7 +359,10 @@ function Results({ r }: { r: RemediationResult }) {
           </CardHeader>
           <CardContent className="space-y-3">
             {r.curve.map((c) => (
-              <div key={c.budget} className="grid grid-cols-[4rem_1fr_4rem] items-center gap-3 text-sm">
+              <div
+                key={c.budget}
+                className="grid grid-cols-[4rem_1fr_4rem] items-center gap-3 text-sm"
+              >
                 <span className="text-muted-foreground">{c.budget}h</span>
                 <div className="h-3 rounded bg-muted">
                   <div
@@ -292,7 +370,9 @@ function Results({ r }: { r: RemediationResult }) {
                     style={{ width: `${Math.min(100, c.removed_pct)}%` }}
                   />
                 </div>
-                <span className="text-right tabular-nums">{c.removed_pct.toFixed(1)}%</span>
+                <span className="text-right tabular-nums">
+                  {c.removed_pct.toFixed(1)}%
+                </span>
               </div>
             ))}
           </CardContent>
@@ -303,13 +383,15 @@ function Results({ r }: { r: RemediationResult }) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Atom className="h-4 w-4" /> QpiAI QCloud — alternative plans (CVaR-QAOA)
+              <Atom className="h-4 w-4" /> QpiAI QCloud — alternative plans
+              (CVaR-QAOA)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              {r.qaoa.qubits} qubits · {r.qaoa.reduced_actions.length} contested actions · reps{" "}
-              {r.qaoa.reps} · {r.qaoa.seconds}s · P(best) {r.qaoa.p_optimal.toFixed(3)} vs uniform{" "}
+              {r.qaoa.qubits} qubits · {r.qaoa.reduced_actions.length} contested
+              actions · reps {r.qaoa.reps} · {r.qaoa.seconds}s · P(best){" "}
+              {r.qaoa.p_optimal.toFixed(3)} vs uniform{" "}
               {r.qaoa.p_uniform.toFixed(3)} (×{r.qaoa.amplification})
             </p>
             <Table>
@@ -326,10 +408,16 @@ function Results({ r }: { r: RemediationResult }) {
                 {r.qaoa.alternatives.map((a, i) => (
                   <TableRow key={a.chosen.join("|") || "none"}>
                     <TableCell>{i + 1}</TableCell>
-                    <TableCell className="font-mono text-xs">{a.chosen.join(", ") || "(nothing)"}</TableCell>
-                    <TableCell className="text-right">{a.residual.toFixed(1)}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {a.chosen.join(", ") || "(nothing)"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {a.residual.toFixed(1)}
+                    </TableCell>
                     <TableCell className="text-right">{a.effort}h</TableCell>
-                    <TableCell className="text-right">{a.probability.toFixed(3)}</TableCell>
+                    <TableCell className="text-right">
+                      {a.probability.toFixed(3)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -340,7 +428,9 @@ function Results({ r }: { r: RemediationResult }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Findings, ranked by context-aware risk</CardTitle>
+          <CardTitle className="text-base">
+            Findings, ranked by context-aware risk
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -355,22 +445,36 @@ function Results({ r }: { r: RemediationResult }) {
             </TableHeader>
             <TableBody>
               {r.findings.map((f) => (
-                <TableRow key={`${f.rel_path}:${f.line_number}:${f.algorithm}`}>
-                  <TableCell className="text-right tabular-nums">{Number(f.score).toFixed(0)}</TableCell>
+                <TableRow
+                  key={`${f.rel_path}:${f.line_number}:${f.algorithm}:${f.slot_key ?? ""}`}
+                >
+                  <TableCell className="text-right tabular-nums">
+                    {Number(f.score).toFixed(0)}
+                  </TableCell>
                   <TableCell>
-                    <Badge variant={TIER_VARIANT[f.tier] ?? "muted"}>{f.tier}</Badge>
+                    <Badge variant={TIER_VARIANT[f.tier] ?? "muted"}>
+                      {f.tier}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="font-mono text-xs">
-                      {f.rel_path}:{f.line_number}
+                      {f.slot_key
+                        ? f.rel_path
+                        : `${f.rel_path}:${f.line_number}`}
                     </div>
-                    <div className="text-xs text-muted-foreground">{f.algorithm}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {f.algorithm}
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs">
                     {f.role.replace("_", " ")} · {f.exposure}
-                    {f.hndl ? <span className="ml-1 text-vulnerable">HNDL</span> : null}
+                    {f.hndl ? (
+                      <span className="ml-1 text-vulnerable">HNDL</span>
+                    ) : null}
                   </TableCell>
-                  <TableCell className="max-w-md text-xs text-muted-foreground">{f.top_reason}</TableCell>
+                  <TableCell className="max-w-md text-xs text-muted-foreground">
+                    {f.top_reason}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -387,11 +491,21 @@ function Results({ r }: { r: RemediationResult }) {
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
+function Stat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+}) {
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
         <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
         <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
       </CardContent>
