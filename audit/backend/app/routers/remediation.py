@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Annotated, Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import PlainTextResponse
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
@@ -224,3 +225,19 @@ async def qpiai_devices(current_user: Annotated[User, Depends(get_current_user)]
         return {"devices": await run_in_threadpool(_qcloud_devices), "error": None}
     except Exception as e:
         return {"devices": [], "error": rem._qcloud_error(e)}
+
+
+@router.get("/qpiai/log", response_class=PlainTextResponse)
+async def qpiai_log(tail: int = 500):
+    """Public read-only view of the QpiAI run log (benign solve metadata, no secrets).
+
+    Shows the branded [QpiAI Opt] / [QpiAI QCloud] banner appended on each website plan,
+    so it can be opened directly in a browser (e.g. for a demo).
+    """
+    try:
+        text = rem._QPIAI_LOG.read_text(encoding="utf-8")
+    except OSError:
+        return "No QpiAI runs logged yet. Run a plan on the Remediation page, then refresh."
+    lines = text.splitlines()
+    n = max(1, min(tail, 5000))
+    return "\n".join(lines[-n:])
