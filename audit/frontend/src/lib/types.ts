@@ -29,6 +29,7 @@ export interface Org {
   quantum_risk_score: number | null;
   created_at: string;
   license_expires_at?: string | null;
+  viewer_is_operator?: boolean;
 }
 
 export interface AuthResponse {

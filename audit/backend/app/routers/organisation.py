@@ -13,7 +13,7 @@ from app.models.user import User
 from app.rbac import ORG_MANAGE, USERS_MANAGE, USERS_READ, VALID_ROLES
 from app.schemas.auth import OrgOut, UserOut
 from app.schemas.organisation import InviteUserRequest, InviteUserResponse, OrgUpdate, UpdateRoleRequest
-from app.security import get_current_user, hash_password
+from app.security import get_current_user, hash_password, is_operator
 
 router = APIRouter()
 
@@ -34,7 +34,8 @@ async def get_org(
     org = await db.get(Organisation, current_user.org_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organisation not found")
-    return org
+    # Lets the UI show operator navigation without probing /admin/* and eating a 403.
+    return OrgOut.model_validate(org).model_copy(update={"viewer_is_operator": is_operator(current_user)})
 
 
 @router.patch("", response_model=OrgOut)

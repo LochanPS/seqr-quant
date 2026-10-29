@@ -63,6 +63,7 @@ class OrgOut(BaseModel):
     plan: str
     quantum_risk_score: Optional[int]
     created_at: datetime
+    viewer_is_operator: bool = False  # caller is SeQr Labs staff (OPERATOR_EMAILS); set by GET /org
 
 
 class RegisterResponse(BaseModel):

@@ -128,3 +128,12 @@ async def test_blog_delete(client, monkeypatch):
                              json={"title": "temp", "body": "x"})).json()["id"]
     assert (await client.delete(f"/api/v1/admin/posts/{pid}", headers=oph)).status_code == 204
     assert all(p["id"] != pid for p in (await client.get("/api/v1/admin/posts", headers=oph)).json())
+
+
+async def test_org_reports_whether_viewer_is_operator(client, monkeypatch):
+    """The UI decides operator navigation from GET /org instead of probing /admin (403 noise)."""
+    monkeypatch.setattr(settings, "OPERATOR_EMAILS", "op5@test.com")
+    op = await _register(client, "op5@test.com", "Op5 Org")
+    cust = await _register(client, "cust5@test.com", "Cust5 Org")
+    assert (await client.get("/api/v1/org", headers=_auth(op["access_token"]))).json()["viewer_is_operator"] is True
+    assert (await client.get("/api/v1/org", headers=_auth(cust["access_token"]))).json()["viewer_is_operator"] is False

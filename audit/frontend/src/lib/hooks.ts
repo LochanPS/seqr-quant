@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import { api, clearToken, getToken, isStatus } from "./api";
+import { api, clearToken, getToken } from "./api";
 
 /** Redirects to /login?next=... when no token is stored. Returns true once a token exists. */
 export function useRequireAuth() {
@@ -25,15 +25,11 @@ export function useOrg() {
   return useQuery({ queryKey: ["org"], queryFn: api.org.get });
 }
 
-/** Operator access is decided by the backend: if /admin/stats answers, the user is staff. */
+/** Operator access is decided by the backend: GET /org reports whether the caller is staff. */
 export function useIsOperator() {
-  const q = useQuery({
-    queryKey: ["admin-stats"],
-    queryFn: api.admin.stats,
-    retry: false,
-    staleTime: 5 * 60_000,
-  });
-  return { isOperator: q.isSuccess, checked: q.isSuccess || q.isError, denied: isStatus(q.error, 401, 403) };
+  const q = useOrg();
+  const isOperator = Boolean(q.data?.viewer_is_operator);
+  return { isOperator, checked: q.isSuccess || q.isError, denied: q.isSuccess && !isOperator };
 }
 
 export async function logout() {
