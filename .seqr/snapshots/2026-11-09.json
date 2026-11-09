@@ -1,0 +1,908 @@
+{
+  "version": 1,
+  "tool": "seqr ci --snapshot",
+  "date": "2026-11-09",
+  "timestamp": "2026-11-09T14:40:48+00:00",
+  "commit": "faab32f",
+  "policy": "SeQr CI baseline (PCI DSS + SEBI CSCRF intent)",
+  "totals": {
+    "scanned": 117,
+    "drift": 111,
+    "by_severity": {
+      "low": 0,
+      "medium": 0,
+      "high": 111,
+      "critical": 0
+    }
+  },
+  "drift": [
+    {
+      "fingerprint": "00055edd5f3b41d622cfdf00e36e0f04d3ad30d25b3d739d6753049c11bb2d79",
+      "file": "shared-scanner/tests/fixtures/code/python/rsa_usage.py",
+      "line": 6,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "004386b75cc1efff43b9e459ebd5d4d7f46521a5af1e145e8eea979aaad1e609",
+      "file": "audit/backend/app/github_app/client.py",
+      "line": 77,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "034f46d50d135080bcc0f113fb57bdd5cf6c537d9ce1c6896598576adf35591c",
+      "file": "pqcmap/benchmarks/benchmark.py",
+      "line": 127,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "0399d770ca08baff829395ee9d4a98b4e29604e387eddb082c151da7e185ec8f",
+      "file": "pqcmap-go/hybrid.go",
+      "line": 122,
+      "algorithm": "ECDH",
+      "pattern_id": "GO-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "0876b50d421739ba65ea164abd1d80b9c7a02dbabc7ff3007b9d7f58275ffe29",
+      "file": "ecdat-demo/sample-repo/web/src/auth.js",
+      "line": 9,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "08d3b6a5327a92bf3a72d04678241977c653bc35b32e0ca6d4ba1ce6015eda2a",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 92,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "0d5cffd05a95da042c369f3240381c71fdc4cbdd920c3c183bf2238177613ebc",
+      "file": "shared-scanner/tests/test_network_scanner_fixes.py",
+      "line": 164,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "11db6f659346ed045253e31e8d5dbf3df2a07e1108fa4bf59e2b70b8af46eeb0",
+      "file": "pqcmap-js/src/policy.js",
+      "line": 29,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "18ebc79dcb94e6d45e90c0a3fbc2405dbb311281f28cc347ec316b22adcca852",
+      "file": "pqcmap-js/benchmarks/benchmark.js",
+      "line": 70,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "1d2ed23c098c12956c2295592e3c8208bac3796ba1ed446ff786fe743bf846ee",
+      "file": "pqcmap-js/src/policy.js",
+      "line": 35,
+      "algorithm": "ECDSA",
+      "pattern_id": "JS-ECDSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "1e23afbd0ca111272a7f5ab08911abfea9c965cd41988d780c70fdcd811250bf",
+      "file": "shared-scanner/tests/test_direct_tls_protocols.py",
+      "line": 119,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "2319e3eff10bfc49dd0498a704612a2c65e7c5364bee339a56a203e100928c0d",
+      "file": "ecdat-demo/sample-repo/core/src/CryptoUtil.java",
+      "line": 14,
+      "algorithm": "RSA",
+      "pattern_id": "JAVA-RSA-KEYGEN",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "233621430ddd801e08f4a60b07c1ca350640cc4cb5bb13d6bef6241972deb86f",
+      "file": "pqcmap/examples/worked_migration/before/auth_service.py",
+      "line": 23,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "24f9201dda1da71548a9594f13f75f5e7f70e76966b8109f76b4ede1702adaf1",
+      "file": "cli/seqr/_scanner/engines/risk_v2.py",
+      "line": 177,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "25c6e513cdecf129643ee92072cedfea57834049d94f30fb130617f58ad9d2aa",
+      "file": "shared-scanner/tests/test_network_scanner_fixes.py",
+      "line": 164,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "274df7d6761aba7723da42fb6a8dbdf3a0761efa323f0b185ed342075ca8f40f",
+      "file": "ecdat-demo/sample-repo/gateway/rsa_gateway.go",
+      "line": 12,
+      "algorithm": "RSA",
+      "pattern_id": "GO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "297710274b6c8a7e89e85dcf6e312cecf33fafd8149a8f3a78b5b9606e3cf3ca",
+      "file": "shared-scanner/tests/fixtures/code/javascript/rsa_jwt.js",
+      "line": 7,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "JS-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "2a7451afefb391e2ede9f99dd2d71380c1609f60ecafa35ad6ceef3a6fbac77e",
+      "file": "shared-scanner/tests/test_code_scanner.py",
+      "line": 138,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "2bb3766076636ab7819e4b7f61df4d32215e3d42d9f8166fd1cbbbc74f824cec",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 94,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "2ca8229357f47fb45ce54b934909b060c90b8dde22e3ecc7e0ffcfca73e20efa",
+      "file": "shared-scanner/tests/fixtures/code/python/rsa_usage.py",
+      "line": 13,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "2fbfa6df84eac506d54f2860d09a6013387a81aedca14418adebdfe5e1fbeabd",
+      "file": "shared-scanner/tests/test_direct_tls_protocols.py",
+      "line": 119,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "2febd5ac245b792528a4bbcbf5f57788a90f03bca4c43d6cc99296dacb5f5bb2",
+      "file": "shared-scanner/tests/test_direct_tls_protocols.py",
+      "line": 119,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "35b23afa7e7f2e83ce2d9a9bc3fbb84bfb8ec9a3ea153e38d50ce372a8e00d19",
+      "file": "audit/backend/app/sso/oidc.py",
+      "line": 141,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "390b7eaeceec15fa17ed3e232bf28f33dba5dea5a9b7292de170ff7883558749",
+      "file": "ecdat-demo/sample-repo/payments/legacy_dh.py",
+      "line": 8,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "3bc9ffd78e85f353d71dd783e1fd5abdb99733255ea1cae7233d664fbf457b83",
+      "file": "shared-scanner/tests/test_network_scanner_fixes.py",
+      "line": 166,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "3d5dc8c77e39db2bffb8a17461abf7757694f7740945129f2c15f459feea022a",
+      "file": "shared-scanner/tests/test_code_scanner.py",
+      "line": 37,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "400765405c3bfc75947edfd0677758fe96cb839ebb99af707be42d96732444f3",
+      "file": "ecdat-demo/sample-repo/auth/tokens.py",
+      "line": 24,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "40cca6f8e14781757a59f3ff1568f795a5f762676ff963c80d874a4c5d7bbbd8",
+      "file": "audit/frontend/src/components/marketing/live-scan.tsx",
+      "line": 96,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "41e846086b5dac06bb9498c0de3c2223a015d9d05729a4845f764fdbf3927702",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 62,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "434bdc9524831e2d087e1a0d132e79e602c975164a7c95c9dd6dcb73390273ab",
+      "file": "pqcmap-go/hybrid.go",
+      "line": 126,
+      "algorithm": "ECDH",
+      "pattern_id": "GO-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "439ad37dc6e68468996a2c206a36ca5397baaaac106fe2940d297e13d5040675",
+      "file": "pqcmap/tests/test_pyjwt_adapter.py",
+      "line": 49,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "43a72bb680e5df14e9f408f9263e75040553e000c881851df674bfa7933f8ba0",
+      "file": "audit/backend/tests/test_sso_saml.py",
+      "line": 39,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "468b434f2117e5c51a389d2b8653bfc769c796ec492cc4f25e05350704b2f1b6",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 62,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "47150abbf718ef4ca16854a009d815904bc3c3ed46546a93b5c87957f9a161b0",
+      "file": "pqcmap-js/src/policy.js",
+      "line": 33,
+      "algorithm": "ECDSA",
+      "pattern_id": "JS-ECDSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "47bf4cb07f3b9d6c396ef84a393bf659459d7f18d86f6ff0fe9bb036b2e3aa18",
+      "file": "shared-scanner/tests/test_code_scanner.py",
+      "line": 568,
+      "algorithm": "ECDSA-SHA256",
+      "pattern_id": "PY-JWT-ES256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "482052324f76ab02e93a64961e4634a762c593ad4e4c467c59059aec97c6dc38",
+      "file": "shared-scanner/tests/test_code_scanner.py",
+      "line": 25,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "4931919bc6a367ad59e94eea57369e1561f7952f40bd97aa5841b922dbf61285",
+      "file": "pqcmap-go/hybrid.go",
+      "line": 67,
+      "algorithm": "ECDH",
+      "pattern_id": "GO-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "4baaa2b6a309353ddb2417332c734f553632526a20ff8dacc77ea5649d8adfd0",
+      "file": "shared-scanner/tests/test_network_scanner_fixes.py",
+      "line": 164,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "4fcba5edcc2defa059646105fdeaf32bbdd1bfe5d36c7041706003b9d3b8415b",
+      "file": "shared-scanner/tests/test_network_scanner_fixes.py",
+      "line": 166,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "50a028dba4edbaa7f1605ef6b5d9094bca56920ebf0e163443dd8c376f896ee6",
+      "file": "pqcmap/benchmarks/benchmark.py",
+      "line": 129,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "5164c0e64f83252e9628d4aeb6e7e78665cf9311bed0f8eed9e6d55103b95194",
+      "file": "shared-scanner/tests/fixtures/code/python/rsa_usage.py",
+      "line": 6,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "574e61abca0a0960810455e0b5f8e38f28fe1d3487b48b3c64624861af73ad75",
+      "file": "ecdat-demo/sample-repo/payments/rsa_keys.py",
+      "line": 8,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-002",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "577015d341ef578b62501bd3b17af142fb35d5a5e5eaafdeba0a822a5a669666",
+      "file": "pqcmap/benchmarks/benchmark.py",
+      "line": 127,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "57b3088dc789f0d7ae927c06483a933bf8bc97506ceb38c6859162ceca9e6c66",
+      "file": "ecdat-demo/sample-repo/infra/ssh_deploy.py",
+      "line": 12,
+      "algorithm": "RSA",
+      "pattern_id": "PY-PARAMIKO-RSA",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "5a000e1c5336c3c8dd9869b2346282cecb08aa5a84ce44834be2cfbb28360d77",
+      "file": "deploy/agent/tests/_certs.py",
+      "line": 31,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "5e58a43d03a3cedbe3bda06d15eb48029d655d55f3c9f5f63cf6e7fdf5f3c074",
+      "file": "pqcmap/pqcmap/core/hybrid.py",
+      "line": 86,
+      "algorithm": "ECDH",
+      "pattern_id": "PY-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "5f0cc086ff9ab9f58d5cda542081ea72a2a758e50c52ced8bca4ea33d773f314",
+      "file": "deploy/agent/tests/_certs.py",
+      "line": 26,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "62f40e7b18f7dd327b24857abeb72ae840f3b0c43cb63642a73ca848c4c1e4d7",
+      "file": "ecdat-demo/sample-repo/core/src/CryptoUtil.java",
+      "line": 13,
+      "algorithm": "RSA",
+      "pattern_id": "JAVA-RSA-KEYGEN",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "637dfb6270b3110864b99c2f11be987510afd6eb5e5cb6f41370172d16744b85",
+      "file": "shared-scanner/tests/fixtures/code/javascript/rsa_jwt.js",
+      "line": 13,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "63b8406a4797a4893f061279c9bb45974a8888631e38215cf60201e96f04c320",
+      "file": "shared-scanner/tests/test_network_scanner_fixes.py",
+      "line": 166,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "64a8841377d88c21ea9e622d767512743e9671507b13807c6298f93935deaa92",
+      "file": "audit/frontend/src/components/marketing/live-scan.tsx",
+      "line": 71,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "685c4e3481fab6f014be29965b4e319526625aefe103ba388f29c59ed37a3e1f",
+      "file": "pqcmap-js/src/policy.js",
+      "line": 30,
+      "algorithm": "ECDSA",
+      "pattern_id": "JS-ECDSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "6cfbf70958524ab184e28500edec718e344cf45b38c92347d9c8f5de12d67608",
+      "file": "shared-scanner/engines/risk_v2.py",
+      "line": 177,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "6ea81f6dfe9bcfaf6c201aa0129d9332b4eab86afcce0eb6d251b0669b55bcc5",
+      "file": "pqcmap-go/hybrid.go",
+      "line": 95,
+      "algorithm": "ECDH",
+      "pattern_id": "GO-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "6fe6aa25a5c8579a49efaabd162f6f2da58e3f55f74b98cf026a972d6d266ce3",
+      "file": "deploy/agent/tests/_certs.py",
+      "line": 31,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "77e4fc0a300411b31daed5a29e746d2536774f9cd0e39fe46ccdfffae26475be",
+      "file": "pqcmap/examples/worked_migration/before/auth_service.py",
+      "line": 14,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "7ca97b672b3e0af89bb57e98ae11881cde475e75ff9029b84a0f50e835c738b8",
+      "file": "audit/backend/app/migration/execute.py",
+      "line": 83,
+      "algorithm": "ECDH",
+      "pattern_id": "PY-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "7dbf7cd1031a50c5fdcf0491c27a33fce2985eda3cae7220ea5e38d64c4d2e02",
+      "file": "audit/backend/tests/test_sso_saml.py",
+      "line": 39,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "802b98fbd97a2d9df1c2223b96da43a3a021e48cd6807a0cce925f858dcbed20",
+      "file": "shared-scanner/engines/risk_v2.py",
+      "line": 177,
+      "algorithm": "ECDSA-SHA256",
+      "pattern_id": "PY-JWT-ES256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "804106264735fb84c8b59b01c403101c872a3704087062cd3e8666620d9b2f16",
+      "file": "audit/frontend/src/components/marketing/live-scan.tsx",
+      "line": 106,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "86ab69eeb45732245823da3f38af8ce340616bf0d37d7c930a2d7bbbfe197876",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 62,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "8fb8c5258486c8ffab95e164f1a3b67386c37bd42bbbb05bb162591c144c8d24",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 96,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "90de47af410d9ea3ee6dd9e69c5c491dc6b3f8e8805e641124e5716fd83bf79f",
+      "file": "cli/tests/fixtures/sample_project_python/vulnerable.py",
+      "line": 6,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "91a66bb10e55224ed67761f56c29905cad75e66d50d571ad651f73c33fea9725",
+      "file": "audit/backend/tests/test_sso_saml.py",
+      "line": 39,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "9371b2ed986aae1cf2031c0b373adbcc3571e306d182f2354c79cb818f911d7a",
+      "file": "pqcmap-go/hybrid.go",
+      "line": 130,
+      "algorithm": "ECDH",
+      "pattern_id": "GO-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "94871843b4048294b2b8bd5ae20fb1558d5cab89c482190c4e33f5886bd93733",
+      "file": "audit/backend/tests/test_sso_oidc.py",
+      "line": 29,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "95a41b28c02d3780e92a665fe38ea6ec6eff8a7a7ea4fb6c9f76f004a538d59b",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 93,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "95c1592ca2c60922093251c72a5e72612eb3d1eddc1118a5735f3ab14be4a3ce",
+      "file": "shared-scanner/tests/fixtures/code/python/rsa_usage.py",
+      "line": 13,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "96e36d59cd02b2816e0bf1e7d75b25a265c56be10cf033cb269d42f62d196dc8",
+      "file": "shared-scanner/tests/test_code_scanner.py",
+      "line": 22,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "980daf3a652e4f889f2e3f13b9cbc62d68d9c98ebb3d18d1810e6fa49e25e838",
+      "file": "pqcmap/examples/worked_migration/before/auth_service.py",
+      "line": 14,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "993cc94079b4586d8c59e8ac7f9f165a29017784ec15f29af665e4f8ea875215",
+      "file": "audit/frontend/src/components/marketing/live-scan.tsx",
+      "line": 121,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "9d96d8a04b062717f0bc74c3f0d6a3628c74d76adf1c65d7606e715d6bc09707",
+      "file": "cli/seqr/_scanner/engines/risk_v2.py",
+      "line": 177,
+      "algorithm": "ECDSA-SHA256",
+      "pattern_id": "PY-JWT-ES256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "9de5ad69d109cc20e916d1346db8738b35d726411b01fb1ceec27df0b4772917",
+      "file": "cli/tests/fixtures/sample_project_python/vulnerable.py",
+      "line": 6,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "a2529ea2b5140bfd666b848b9ae4d9c1890c13b94ec6fe4b928d7d1f2fa092a1",
+      "file": "audit/backend/tests/test_sso_oidc.py",
+      "line": 29,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "a265df56149d7ead8dc6eded07a22b5849e607a4271fed383f1f5de68a1761a4",
+      "file": "pqcmap/benchmarks/benchmark.py",
+      "line": 129,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "a5317b0a72afd733e961fee80ac605b2198b27525f62468328a3029dcdb98238",
+      "file": "pqcmap/pqcmap/core/hybrid.py",
+      "line": 99,
+      "algorithm": "ECDH",
+      "pattern_id": "PY-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "aedc86f5ba6a7305cd19ddbdd97011d1f2bebd12b65984d5007442418ff7aed8",
+      "file": "shared-scanner/tests/test_code_scanner.py",
+      "line": 584,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "b0bcfde5adc6d01ed9f3ae377b3ba6f3b14b9e704b5e16f74762fb2bc989d728",
+      "file": "cli/tests/fixtures/sample_project_python/vulnerable.py",
+      "line": 6,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "b260f5656a12282f4d97b708ef02beaaaf400753002a80247d6a3f725a8e1447",
+      "file": "ecdat-demo/sample-repo/gateway/ecdsa_gateway.go",
+      "line": 13,
+      "algorithm": "ECDSA",
+      "pattern_id": "GO-ELLIPTIC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "b5adf1425a883d1ec56f88f19076cd4f2b188945e68c4ba4d67910aeb5bcc229",
+      "file": "pqcmap-go/hybrid.go",
+      "line": 91,
+      "algorithm": "ECDH",
+      "pattern_id": "GO-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "b8348fb4e17b4f1af034ae0c158253db414ca61b66b48c84d3d6d457b6b6c48d",
+      "file": "ecdat-demo/sample-repo/web/src/legacy_crypto.js",
+      "line": 14,
+      "algorithm": "RSA",
+      "pattern_id": "JS-FORGE-RSA",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "b993310d09d04b08d105d615f69b864b5212d521b148141b3cf3c3cf56c1097d",
+      "file": "pqcmap/examples/worked_migration/before/auth_service.py",
+      "line": 14,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "bfaf5743c6f5d1abfb030a86055651618d3aca42aeaa11a2bded429352b35b73",
+      "file": "audit/backend/tests/test_github_app.py",
+      "line": 136,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "c63de86746d0c965106bf30a17b89b1a95e7566f7e4e9a665eb5f6807fd2fcea",
+      "file": "deploy/agent/tests/_certs.py",
+      "line": 26,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "c9023396eb0faf15880f714720e78093932814b2e513b0d33586f5ab194e197c",
+      "file": "shared-scanner/tests/fixtures/code/python/rsa_usage.py",
+      "line": 13,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "cd41ffde7d4616bd48719e7e6e69e7acc4f819f08803b08a2fb754c95b51eb00",
+      "file": "pqcmap-go/hybrid.go",
+      "line": 87,
+      "algorithm": "ECDH",
+      "pattern_id": "GO-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "cd587739a0803b50a9c78654d28adb50a64014d8d3120d22872ff608aa3f3f0f",
+      "file": "ecdat-demo/sample-repo/web/src/auth.js",
+      "line": 22,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "cd5b8151a649dedf2124e2fb890fc436e532ec6d4dd9f3af1f89cc991ee7cf3b",
+      "file": "audit/backend/app/migration/execute.py",
+      "line": 84,
+      "algorithm": "ECDH",
+      "pattern_id": "PY-ECDH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "ce090272a5876010ea3eca838abfbca1e4874a59fa8879441c8a73d2600f576f",
+      "file": "ecdat-demo/sample-repo/web/src/legacy_crypto.js",
+      "line": 9,
+      "algorithm": "RSA",
+      "pattern_id": "JS-FORGE-RSA",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "cf55f6898aff6c675e4a777edde7c539b91d549db4f8753afa4620d7d24a6577",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 96,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "cf89bda5a9302b8049428dc474d08560a565ce0ed805bcafcd724b2d2dd1771f",
+      "file": "pqcmap-js/src/policy.js",
+      "line": 71,
+      "algorithm": "ECDSA",
+      "pattern_id": "JS-ECDSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "d3d6f138ab93a6449a78656f47533fab129e149e84ef845087f9730538ab2cb4",
+      "file": "audit/backend/tests/test_sso_oidc.py",
+      "line": 29,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "d7c8eb5e18195d17cf3fc7cf3b9a143ce307ca2c656d1aa4b68b7409ce4b2795",
+      "file": "pqcmap-js/src/policy.js",
+      "line": 71,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "d9a18f2df873d1645fc21f3a5592a35c6c32d759ddd38dd9848e06265b231206",
+      "file": "deploy/agent/tests/_certs.py",
+      "line": 31,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "d9e48a11d64710c862926e11ec31971650d28a5b03dd1b219530ae34d217741e",
+      "file": "ecdat-demo/sample-repo/web/src/legacy_crypto.js",
+      "line": 14,
+      "algorithm": "RSA",
+      "pattern_id": "JS-WEBCRYPTO-RSA",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "dcd87c651594b93453b2e4d39a790edb8e1bdf2bc9babb529166f5cc5139b2e0",
+      "file": "pqcmap/benchmarks/benchmark.py",
+      "line": 129,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "e2007eccf697bf2f8f9c17b0e57a8e0f8368a79710c6a1376fc311355987d5e7",
+      "file": "shared-scanner/tests/fixtures/code/python/rsa_usage.py",
+      "line": 6,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "e27adce641b1aba2386494792cbddec24b76643965af6b4bebbd645be78249f7",
+      "file": "ecdat-demo/sample-repo/core/src/CryptoUtil.java",
+      "line": 15,
+      "algorithm": "RSA",
+      "pattern_id": "JAVA-RSA-KEYGEN",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "e5d4e8d36d12da5a9ed3cac8b9c1dbfae17dc0cd7d425283ff4baf392f4622f6",
+      "file": "ecdat-demo/sample-repo/core/src/CryptoUtil.java",
+      "line": 13,
+      "algorithm": "ECDSA",
+      "pattern_id": "JAVA-ECDSA",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "e7f06a253cfac0d0e4b8a337fb7147c50592738934d4e886ca71add492ed4872",
+      "file": "pqcmap/examples/worked_migration/before/auth_service.py",
+      "line": 19,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "ec56c287e5de61660a2d7e9255609d9a69c7759dc35366c40762034ee091f88e",
+      "file": "audit/backend/app/sso/oidc.py",
+      "line": 141,
+      "algorithm": "ECDSA-SHA256",
+      "pattern_id": "PY-JWT-ES256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "ecccf5e27349de66ddd8085ca251c5db2c933b717611b7acf17537a582dd60bc",
+      "file": "audit/frontend/src/components/marketing/live-scan.tsx",
+      "line": 122,
+      "algorithm": "RSA",
+      "pattern_id": "JS-CRYPTO-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "eed4bac71b538d6e6e58ced2a1159ff413fd5fad0af68f85101716879f9a26ea",
+      "file": "shared-scanner/tests/test_network_scanner.py",
+      "line": 96,
+      "algorithm": "ECDSA",
+      "pattern_id": "PY-ECC-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "f4ed10d4b675688defa93a4d7d9577107211fab6496df9751ddd3ff36fbfbc5f",
+      "file": "pqcmap/benchmarks/benchmark.py",
+      "line": 127,
+      "algorithm": "RSA",
+      "pattern_id": "PY-RSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "f652cf49d18b94443c31756c2e87e1bf38d405fbe61337eaeaf627b32bd690cf",
+      "file": "audit/backend/tests/test_sso_oidc.py",
+      "line": 51,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "PY-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "f7048a37b8097b8b2b9949cac6f78c0385494a5acbe6d65cc9cd98916ab49545",
+      "file": "ecdat-demo/sample-repo/core/src/CryptoUtil.java",
+      "line": 15,
+      "algorithm": "ECDSA",
+      "pattern_id": "JAVA-ECDSA",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "f9096a10ded8e4b54036f491eb389a28be9a235d58381d782cc5a21e443ee3d2",
+      "file": "ecdat-demo/sample-repo/gateway/ecdsa_gateway.go",
+      "line": 13,
+      "algorithm": "ECDSA",
+      "pattern_id": "GO-ECDSA-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "fc32fe59fd06f37105477fe702a6a2925711fe9902ea7f3daa8a090a03db639b",
+      "file": "ecdat-demo/sample-repo/web/src/auth.js",
+      "line": 16,
+      "algorithm": "RSA-SHA256",
+      "pattern_id": "JS-JWT-RS256",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "fe89ea35500de7a3b25fa7e5441cddba73d654c726dfa5f1e01fdaffd3096efa",
+      "file": "ecdat-demo/sample-repo-mixed/legacy/statements.js",
+      "line": 4,
+      "algorithm": "RSA",
+      "pattern_id": "JS-FORGE-RSA",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "ff6940f9f8f1d162c13efc8f46d9e62d26abec599013add27a3c479e279ab083",
+      "file": "deploy/agent/tests/_certs.py",
+      "line": 26,
+      "algorithm": "DH",
+      "pattern_id": "PY-DH-001",
+      "severity": "high"
+    },
+    {
+      "fingerprint": "ffc7c84c0316fb280ed452e68ab98a514a532780b0fa3eb154a515487adcc4bb",
+      "file": "pqcmap-js/src/policy.js",
+      "line": 34,
+      "algorithm": "ECDSA",
+      "pattern_id": "JS-ECDSA-001",
+      "severity": "high"
+    }
+  ]
+}
